@@ -20,7 +20,7 @@ The `DataFrame` allows to:
 
 The `DataFrame` API uses some of the latest C++ standard features to assure type-correctness of operations at compile-time, for example to disallow computing the standard deviation for string-based columns.
 
-## Further Features
+## Further APIs
 
 Complementary features to enrich the `DataFrame` API, e.g. to read CSV files into `DataFrames` are also made public. This includes among others:
 
@@ -58,12 +58,12 @@ The below code exemplifies how to use the `DataFrame` class to perform data crun
         });
 
         // query all the persons with a BMI of 25 or higher
-        auto df_with_high_bmi = df_with_bmi.query([](dacar_param) {
-            return dacr_data("bmi") >= 25.0;
+        auto df_bmi_for_older_age = df_with_bmi.query([](dacar_param) {
+            return dacr_data("age") >= 60;
         });
 
-        // compute average BMI grouped by cities
-        auto df_avg_bmi_by_city = df_with_bmi.summarize<
+        // compute average BMI grouped by cities for older people
+        auto df_avg_bmi_by_city = df_bmi_for_older_age.summarize<
             dacr::Avg<"bmi">,
             dacr::GroupBy<"city">
         >();
