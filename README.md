@@ -10,7 +10,7 @@ Therefore, some of the features are partly implemented or with limited checks on
 
 # DataFrame
 
-The core API of the *data crunching library (dcl)* for C++ is the `DataFrame` which is an in-memory column-store database with efficient memory layout.
+The core API of the *data crunching (dacr)* library for C++ is the `DataFrame` which is an in-memory column-store database with efficient memory layout.
 The `DataFrame` allows to:
 
 - query rows by user-defined functions
@@ -31,18 +31,31 @@ Complementary features to enrich the `DataFrame` API, e.g. to read CSV files int
 
 The below code exemplifies how to use the `DataFrame` class to perform data crunching.
 
+    #include <cmath>
     #include <string>
+    
     #include <data_crunching/dataframe.hpp>
     #include <data_crunching/dataframe/load.hpp>
 
-    using DataFrame = dcl::DataFrame<
-        dcl::Column<"name", std::string>,
-        dcl::Column<"city", std::string>,
-        dcl::Column<"age", int>,
-        dcl::Column<"size_in_cm", int>,
-        dcl::Column<"weight_in_kg", int>
+    using DataFrame = dacr::DataFrame<
+        dacr::Column<"name", std::string>,
+        dacr::Column<"city", std::string>,
+        dacr::Column<"age", int>,
+        dacr::Column<"size_in_m", double>,
+        dacr::Column<"weight_in_kg", int>
     >;
 
     int main (int argc, char*argv) {
-        auto df = dcl::load_csv<DataFrame, dcl::CSVInOrder>("input.csv");
+        auto df = dacr::load_csv<DataFrame, dacr::CSVInOrder>("input.csv");
+
+        // compute body-mass-index into a new column applying the lambda for each row
+        // the type for column "bmi" is deduced automatically by return value of lambda function
+        df.apply<"bmi">([](nc_param) { 
+            return (
+                static_cast<double>(nc_data("weight_in_kg")) / 
+                std::pow(nc_data("size_in_cm"), 2)
+            );
+        });
+
+        df.print();
     }
