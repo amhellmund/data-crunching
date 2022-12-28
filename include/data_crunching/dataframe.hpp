@@ -22,8 +22,8 @@
 #ifndef DATA_CRUNCHING_DATAFRAME_HPP
 #define DATA_CRUNCHING_DATAFRAME_HPP
 
-namespace dacr {
+namespace dcl {
 
-} // namespace dacr
+} // namespace dcl
 
 #endif // DATA_CRUNCHING_DATAFRAME_HPP
