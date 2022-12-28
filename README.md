@@ -48,14 +48,25 @@ The below code exemplifies how to use the `DataFrame` class to perform data crun
     int main (int argc, char*argv) {
         auto df = dacr::load_csv<DataFrame, dacr::CSVInOrder>("input.csv");
 
-        // compute body-mass-index into a new column applying the lambda for each row
-        // the type for column "bmi" is deduced automatically by return value of lambda function
-        df.apply<"bmi">([](nc_param) { 
+        // compute body-mass-index into a new column applying the lambda to each row
+        // the type for column "bmi" is deduced automatically
+        auto df_with_bmi = df.apply<"bmi">([](dacr_param) { 
             return (
-                static_cast<double>(nc_data("weight_in_kg")) / 
-                std::pow(nc_data("size_in_cm"), 2)
+                static_cast<double>(dacr_data("weight_in_kg")) / 
+                std::pow(dacr_data("size_in_cm"), 2)
             );
         });
 
-        df.print();
+        // query all the persons with a BMI of 25 or higher
+        auto df_with_high_bmi = df_with_bmi.query([](dacar_param) {
+            return dacr_data("bmi") >= 25.0;
+        });
+
+        // compute average BMI grouped by cities
+        auto df_avg_bmi_by_city = df_with_bmi.summarize<
+            dacr::Avg<"bmi">,
+            dacr::GroupBy<"city">
+        >();
+
+        df_avg_bmi_by_city.print();
     }
