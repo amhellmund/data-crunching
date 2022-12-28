@@ -24,6 +24,7 @@ The `DataFrame` API uses some of the latest C++ standard features to assure type
 
 Complementary features to enrich the `DataFrame` API, e.g. to read CSV files into `DataFrames` are also made public. This includes among others:
 
+- `NamedTuple` to define and access tuples by name instead of by type or id (like for `std::tuple`).
 - Type-aware `split` function for `string` and `string_view` to convert split parts into types directly.
 - Range adaptors for numeric `sequence`s and text-based file streams to allow using the C++20 ranges library for such activities.
 
