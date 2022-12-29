@@ -15,6 +15,8 @@
 #ifndef DATA_CRUNCHING_DATAFRAME_HPP
 #define DATA_CRUNCHING_DATAFRAME_HPP
 
+#include <vector>
+
 #include "data_crunching/internal/dataframe.hpp"
 #include "data_crunching/internal/column.hpp"
 #include "data_crunching/internal/name_list.hpp"
@@ -31,7 +33,9 @@ public:
 
     DataFrame() = default;
 private:
-    using ColumnStoreDataType = internal::ConstructColumnStoreDataType;
+    using ColumnStoreDataType = internal::ConstructColumnStoreDataType<std::vector, Columns...>;
+
+    ColumnStoreDataType column_store_data_{};
 };
 
 } // namespace dacr

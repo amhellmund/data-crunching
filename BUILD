@@ -6,6 +6,7 @@ cc_library(
         "include/data_crunching/internal/dataframe.hpp",
         "include/data_crunching/internal/fixed_string.hpp",
         "include/data_crunching/internal/name_list.hpp",
+        "include/data_crunching/internal/utils.hpp",
     ],
     includes = ["include"],
     visibility = ["//visibility:public"],

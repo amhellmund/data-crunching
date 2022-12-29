@@ -10,11 +10,13 @@ cc_test(
 )
 
 cc_test(
-    name = "test_dataframe_internal",
+    name = "test_internal",
     srcs = [
         "internal/column.test.cpp",
+        "internal/dataframe.test.cpp",
         "internal/fixed_string.test.cpp",
         "internal/name_list.test.cpp",
+        "internal/utils.test.cpp",
     ],
     deps = [
         "//:data_crunching",
