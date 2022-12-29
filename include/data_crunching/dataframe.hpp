@@ -32,8 +32,51 @@ public:
     friend class DataFrame;
 
     DataFrame() = default;
+
+    // ############################################################################
+    // API: Get Size
+    // ############################################################################
+    std::size_t getSize() const {
+        if constexpr (sizeof...(Columns) > 0) {
+            return std::get<0>(column_store_data_).size();
+        }
+        else {
+            return 0;
+        } 
+    }
+
+    // ############################################################################
+    // API: Scalar Insertion
+    // ############################################################################
+    template <typename ...TypesToInsert>
+    requires (
+        sizeof...(TypesToInsert) == sizeof...(Columns) &&
+        true /* is convertible to */
+    )
+    void insert (TypesToInsert&& ...values) {
+        assure_sufficient_capacity_in_column_store(1, IndicesForColumnStore{});
+        insert_impl<TypesToInsert...>(std::forward<TypesToInsert>(values)..., IndicesForColumnStore{});
+    }
+
 private:
     using ColumnStoreDataType = internal::ConstructColumnStoreDataType<std::vector, Columns...>;
+    using IndicesForColumnStore = std::index_sequence_for<Columns...>;
+
+    template <std::size_t ...Indices>
+    void assure_sufficient_capacity_in_column_store (std::size_t amount_to_insert, std::integer_sequence<std::size_t, Indices...>) {
+        if constexpr (sizeof...(Columns) > 0) {
+            const auto& first_column_data = std::get<0>(column_store_data_);
+            if (first_column_data.size() + amount_to_insert >= first_column_data.capacity()) {
+                const std::size_t new_capacity = first_column_data.capacity() * 1.50;
+                ((std::get<Indices>(column_store_data_).reserve(new_capacity)), ...);
+            }
+        }
+    }
+
+    template <typename ...TypesToInsert, std::size_t ...Indices>
+    void insert_impl (TypesToInsert&& ...values, std::integer_sequence<std::size_t, Indices...>) {
+        (std::get<Indices>(column_store_data_).push_back(std::forward<TypesToInsert>(values)), ...);
+    }
 
     ColumnStoreDataType column_store_data_{};
 };

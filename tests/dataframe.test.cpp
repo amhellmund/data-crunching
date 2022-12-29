@@ -25,3 +25,18 @@ TEST(DataFrame, ValidDataFrameDefinition) {
     EXPECT_NO_THROW((DataFrame<Column<"1st", int>>()));
     EXPECT_NO_THROW((DataFrame<Column<"1st", int>, Column<"2nd", double>>()));
 }
+
+TEST(DataFrame, InsertScalarValues) {
+    DataFrame<
+        Column<"int", int>,
+        Column<"dbl", double>
+    > testdf;
+    
+    EXPECT_EQ(testdf.getSize(), 0);
+    testdf.insert(10, 20.0);
+    EXPECT_EQ(testdf.getSize(), 1);
+    for (int i = 0; i < 9; ++i) {
+        testdf.insert(i, static_cast<double>(i*20));
+    }
+    EXPECT_EQ(testdf.getSize(), 10);
+}
