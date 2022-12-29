@@ -17,7 +17,10 @@
 
 #include "data_crunching/internal/column.hpp"
 
+using dacr::Column;
 using dacr::internal::is_column_v;
+using dacr::internal::GetColumnNames;
+using dacr::internal::NameList;
 
 TEST(Column, IsColumn) {
     EXPECT_TRUE((is_column_v<dacr::Column<"name", int>>));
@@ -25,4 +28,19 @@ TEST(Column, IsColumn) {
 
 TEST(Column, NotIsColumn) {
     EXPECT_FALSE(is_column_v<int>);
+}
+
+TEST(Column, GetColumnNamesEmpty) {
+    using ColumnNames = GetColumnNames<>;
+    EXPECT_TRUE((std::is_same_v<ColumnNames, NameList<>>));
+}
+
+TEST(Column, GetColumnNamesOne) {
+    using ColumnNames = GetColumnNames<Column<"first", int>>;
+    EXPECT_TRUE((std::is_same_v<ColumnNames, NameList<"first">>));
+}
+
+TEST(Column, GetColumnNamesTwo) {
+    using ColumnNames = GetColumnNames<Column<"first", int>, Column<"second", double>>;
+    EXPECT_TRUE((std::is_same_v<ColumnNames, NameList<"first", "second">>));
 }

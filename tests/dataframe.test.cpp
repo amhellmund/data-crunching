@@ -14,3 +14,14 @@
 
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
+
+#include "data_crunching/dataframe.hpp"
+
+using dacr::Column;
+using dacr::DataFrame;
+
+TEST(DataFrame, ValidDataFrameDefinition) {
+    EXPECT_NO_THROW((DataFrame<>()));
+    EXPECT_NO_THROW((DataFrame<Column<"1st", int>>()));
+    EXPECT_NO_THROW((DataFrame<Column<"1st", int>, Column<"2nd", double>>()));
+}

@@ -22,6 +22,20 @@ namespace dacr::internal {
 template <FixedString ...Names>
 struct NameList {};
 
+// ############################################################################
+// TMP: Prepend To Name List
+// ############################################################################
+template <FixedString, typename>
+struct NameListPrependImpl {};
+
+template <FixedString NameToPrepend, FixedString ...Names>
+struct NameListPrependImpl<NameToPrepend, NameList<Names...>> {
+    using type = NameList<NameToPrepend, Names...>;
+};
+
+template <FixedString NameToPrepend, typename NameList>
+using NameListPrepend = typename NameListPrependImpl<NameToPrepend, NameList>::type;
+
 } // namespace dacr::internal
 
 #endif // DATA_CRUNCHING_INTERNAL_NAME_LIST_HPP

@@ -16,6 +16,7 @@
 #define DATA_CRUNCHING_INTERNAL_COLUMN_HPP
 
 #include "data_crunching/internal/fixed_string.hpp"
+#include "data_crunching/internal/name_list.hpp"
 
 namespace dacr {
 
@@ -25,7 +26,7 @@ struct Column {};
 namespace internal {
 
 // ############################################################################
-// Concept: IsColumn
+// Trait & Concept: Is Column
 // ############################################################################
 template <typename ...>
 struct IsColumnImpl : std::true_type {};
@@ -33,8 +34,8 @@ struct IsColumnImpl : std::true_type {};
 template <typename FirstType, typename ...RestTypes>
 struct IsColumnImpl<FirstType, RestTypes...> : std::false_type {};
 
-template <FixedString FirstColName, typename FirstColType, typename ...RestColumns>
-struct IsColumnImpl<Column<FirstColName, FirstColType>, RestColumns...> {
+template <FixedString FirstName, typename FirstType, typename ...RestColumns>
+struct IsColumnImpl<Column<FirstName, FirstType>, RestColumns...> {
     static constexpr bool value = IsColumnImpl<RestColumns...>::value;
 };
 
@@ -43,6 +44,26 @@ constexpr bool is_column_v = IsColumnImpl<T>::value;
 
 template <typename T>
 concept IsColumn = is_column_v<T>;
+
+// ############################################################################
+// Trait: Get Column Names
+// ############################################################################
+template <typename ...>
+struct GetColumnNamesImpl {
+    using type = NameList<>;
+};
+
+template <FixedString FirstName, typename FirstType, typename ...RestColumns>
+struct GetColumnNamesImpl<Column<FirstName, FirstType>, RestColumns...> {
+    using type = NameListPrepend<
+        FirstName,
+        typename GetColumnNamesImpl<RestColumns...>::type
+    >;
+};
+
+template <typename ...Columns>
+using GetColumnNames = typename GetColumnNamesImpl<Columns...>::type;
+
 
 } // namespace internal
 

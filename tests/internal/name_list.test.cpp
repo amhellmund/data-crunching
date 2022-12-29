@@ -12,18 +12,27 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#ifndef DATA_CRUNCHING_DATAFRAME_HPP
-#define DATA_CRUNCHING_DATAFRAME_HPP
+#include <gtest/gtest.h>
+#include <gmock/gmock.h>
+#include <type_traits>
 
-#include "data_crunching/internal/column.hpp"
+#include "data_crunching/internal/name_list.hpp"
 
-namespace dacr {
+using dacr::internal::NameList;
+using dacr::internal::NameListPrepend;
 
-template <internal::IsColumn ...Columns>
-class DataFrame {
+TEST(FixedString, AppendToEmptyNameList) {
+    EXPECT_TRUE((
+        std::is_same_v<
+            NameListPrepend<"first", NameList<>>,
+            NameList<"first">
+        >
+    ));
 
-};
-
-} // namespace dacr
-
-#endif // DATA_CRUNCHING_DATAFRAME_HPP
+    EXPECT_TRUE((
+        std::is_same_v<
+            NameListPrepend<"first", NameList<"second">>,
+            NameList<"first", "second">
+        >
+    ));
+}
