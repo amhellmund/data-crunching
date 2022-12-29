@@ -17,9 +17,12 @@
 
 #include <type_traits>
 
+#include "data_crunching/internal/type_list.hpp"
 #include "data_crunching/internal/utils.hpp"
 
 using dacr::internal::TuplePrepend;
+using dacr::internal::TypeList;
+using dacr::internal::is_convertible_to_v;
 
 TEST(Tuple, TuplePrepend) {
     EXPECT_TRUE((std::is_same_v<
@@ -31,4 +34,13 @@ TEST(Tuple, TuplePrepend) {
         TuplePrepend<double, std::tuple<int>>,
         std::tuple<double, int>
     >));
+}
+
+TEST(DataFrameInternal, IsConvertibleTo) {
+    EXPECT_TRUE((is_convertible_to_v<TypeList<>, TypeList<>>));
+    EXPECT_TRUE((is_convertible_to_v<TypeList<short>, TypeList<int>>));
+    EXPECT_TRUE((is_convertible_to_v<TypeList<int, float>, TypeList<long, double>>));
+
+    struct NonConvertibleTo{};
+    EXPECT_FALSE((is_convertible_to_v<TypeList<int>, TypeList<NonConvertibleTo>>));
 }

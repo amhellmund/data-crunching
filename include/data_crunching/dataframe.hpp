@@ -20,6 +20,7 @@
 #include "data_crunching/internal/dataframe.hpp"
 #include "data_crunching/internal/column.hpp"
 #include "data_crunching/internal/name_list.hpp"
+#include "data_crunching/internal/type_list.hpp"
 
 namespace dacr {
 
@@ -51,7 +52,7 @@ public:
     template <typename ...TypesToInsert>
     requires (
         sizeof...(TypesToInsert) == sizeof...(Columns) &&
-        true /* is convertible to */
+        internal::is_convertible_to_v<internal::TypeList<TypesToInsert...>, internal::GetColumnTypes<Columns...>>
     )
     void insert (TypesToInsert&& ...values) {
         assure_sufficient_capacity_in_column_store(1, IndicesForColumnStore{});

@@ -16,6 +16,7 @@ cc_test(
         "internal/dataframe.test.cpp",
         "internal/fixed_string.test.cpp",
         "internal/name_list.test.cpp",
+        "internal/type_list.test.cpp",
         "internal/utils.test.cpp",
     ],
     deps = [

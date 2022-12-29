@@ -19,9 +19,12 @@
 
 #include "data_crunching/internal/column.hpp"
 #include "data_crunching/internal/dataframe.hpp"
+#include "data_crunching/internal/type_list.hpp"
 
 using dacr::Column;
 using dacr::internal::ConstructColumnStoreDataType;
+using dacr::internal::GetColumnTypes;
+using dacr::internal::TypeList;
 
 template <typename T>
 struct TestContainer {};
@@ -45,4 +48,11 @@ TEST(DataFrameInternal, ConstructColumnStoreDataTypeTwoColumns) {
         ConstructColumnStoreDataType<TestContainer, Column<"int", int>, Column<"dbl", double>>,
         std::tuple<TestContainer<int>, TestContainer<double>>
     >)); 
+}
+
+TEST(DataFrameInternal, GetColumnTypes) {
+    EXPECT_TRUE((std::is_same_v<
+        GetColumnTypes<Column<"int", int>, Column<"dbl", double>>,
+        TypeList<int, double>
+    >));
 }

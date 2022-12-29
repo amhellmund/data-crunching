@@ -33,6 +33,22 @@ struct TuplePrependImpl<TypeToPrepend, std::tuple<TupleTypes...>> {
 template <typename TypeToPrepend, typename Tuple>
 using TuplePrepend = typename TuplePrependImpl<TypeToPrepend, Tuple>::type;
 
+// ############################################################################
+// TMP: Is Convertible To Types
+// ############################################################################
+
+template <typename ...>
+struct IsConvertibleToTypeImpl : std::true_type {};
+
+template <typename FirstTypeToConvert, typename ...RestTypesToConvert, typename FirstTypeConvertedTo, typename ...RestTypesConvertedTo>
+struct IsConvertibleToTypeImpl<TypeList<FirstTypeToConvert, RestTypesToConvert...>, TypeList<FirstTypeConvertedTo, RestTypesConvertedTo...>> {
+    static constexpr bool value = std::is_convertible_v<FirstTypeToConvert, FirstTypeConvertedTo> && IsConvertibleToTypeImpl<TypeList<RestTypesToConvert...>, TypeList<RestTypesConvertedTo...>>::value;
+};
+
+template <typename TypesToConvertList, typename ColumnList>
+constexpr bool is_convertible_to_v = IsConvertibleToTypeImpl<TypesToConvertList, ColumnList>::value;
+
+
 } // namespace dacr::internal
 
 #endif // DATA_CRUNCHING_INTERNAL_UTILS_HPP

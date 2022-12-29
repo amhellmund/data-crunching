@@ -20,6 +20,7 @@
 #include "data_crunching/internal/column.hpp"
 #include "data_crunching/internal/name_list.hpp"
 #include "data_crunching/internal/fixed_string.hpp"
+#include "data_crunching/internal/type_list.hpp"
 #include "data_crunching/internal/utils.hpp"
 
 namespace dacr {
@@ -38,16 +39,35 @@ struct ConstructColumnStoreDataTypeImpl {
     using type = std::tuple<>;
 };
 
-template <template <typename, typename ...> typename Container, FixedString FirstName, typename FirstType, typename ...RestColumns>
-struct ConstructColumnStoreDataTypeImpl<Container, Column<FirstName, FirstType>, RestColumns...> {
+template <template <typename, typename ...> typename Container, FixedString FirstColName, typename FirstColType, typename ...RestColumns>
+struct ConstructColumnStoreDataTypeImpl<Container, Column<FirstColName, FirstColType>, RestColumns...> {
     using type = TuplePrepend<
-        Container<FirstType>,
+        Container<FirstColType>,
         typename ConstructColumnStoreDataTypeImpl<Container, RestColumns...>::type
     >;
 };
 
 template <template <typename, typename ...> typename Container, typename ...Columns>
 using ConstructColumnStoreDataType = typename ConstructColumnStoreDataTypeImpl<Container, Columns...>::type;
+
+// ############################################################################
+// Trait: Get Column Types
+// ############################################################################
+template <typename ...>
+struct GetColumnTypesImpl {
+    using type = TypeList<>;
+};
+
+template <FixedString FirstColName, typename FirstColType, typename ...RestColumns>
+struct GetColumnTypesImpl<Column<FirstColName, FirstColType>, RestColumns...> {
+    using type = TypeListPrepend<
+        FirstColType,
+        typename GetColumnTypesImpl<RestColumns...>::type
+    >;
+};
+
+template <typename ...Columns>
+using GetColumnTypes = typename GetColumnTypesImpl<Columns...>::type;
 
 } // namespace internal
 
