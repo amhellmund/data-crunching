@@ -12,5 +12,22 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#include <gtest/gtest.h>
-#include <gmock/gmock.h>
+#ifndef DATA_CRUNCHING_INTERNAL_COLUMN_HPP
+#define DATA_CRUNCHING_INTERNAL_COLUMN_HPP
+
+#include "data_crunching/internal/fixed_string.hpp"
+
+namespace dacr {
+
+template <internal::FixedString Name, typename Type>
+struct Column {};
+
+namespace internal {
+
+
+
+} // namespace internal
+
+} // namespace dacr
+
+#endif // DATA_CRUNCHING_INTERNAL_COLUMN_HPP

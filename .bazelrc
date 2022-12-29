@@ -1,0 +1,6 @@
+build --config=clang_config
+
+build:clang_config --crosstool_top=//toolchain:clang_suite
+build:clang_config --cpu=x86_64
+
+build:clang_config --host_crosstool_top=@bazel_tools//tools/cpp:toolchain
