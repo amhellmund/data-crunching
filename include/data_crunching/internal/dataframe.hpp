@@ -12,10 +12,9 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#ifndef DATA_CRUNCHING_DATAFRAME_HPP
-#define DATA_CRUNCHING_DATAFRAME_HPP
+#ifndef DATA_CRUNCHING_INTERNAL_DATAFRAME_HPP
+#define DATA_CRUNCHING_INTERNAL_DATAFRAME_HPP
 
-#include "data_crunching/internal/dataframe.hpp"
 #include "data_crunching/internal/column.hpp"
 #include "data_crunching/internal/name_list.hpp"
 
@@ -23,17 +22,14 @@ namespace dacr {
 
 template <internal::IsColumn ...Columns>
 requires internal::are_names_unique_v<internal::GetColumnNames<Columns...>>
-class DataFrame {
-public:
-    template<internal::IsColumn ...OtherColumns>
-    requires internal::are_names_unique_v<internal::GetColumnNames<OtherColumns...>>
-    friend class DataFrame;
+class DataFrame;
 
-    DataFrame() = default;
-private:
-    using ColumnStoreDataType = internal::ConstructColumnStoreDataType;
-};
+namespace internal {
+
+using ConstructColumnStoreDataType = int;
+
+} // namespace internal
 
 } // namespace dacr
 
-#endif // DATA_CRUNCHING_DATAFRAME_HPP
+#endif // DATA_CRUNCHING_INTERNAL_DATAFRAME_HPP
