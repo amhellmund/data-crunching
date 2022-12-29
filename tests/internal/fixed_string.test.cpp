@@ -23,25 +23,21 @@ using dacr::internal::areFixedStringsEqual;
 using ::testing::ElementsAre;
 
 TEST(FixedString, HasCorrectLength) {
-    auto str = FixedString("test");
-    EXPECT_EQ(str.getLength(), 4);
+    EXPECT_EQ(FixedString("test").getLength(), 4);
 }
 
 TEST(FixedString, Append) {
-    auto str = FixedString("test");
-    auto append_str = str.append("_impl");
-    EXPECT_EQ(append_str.getLength(), 9);
-    EXPECT_THAT(append_str.data, ElementsAre('t', 'e', 's', 't', '_', 'i', 'm', 'p', 'l', '\0'));
+    auto str = FixedString("test").append("_impl");
+    EXPECT_EQ(str.getLength(), 9);
+    EXPECT_THAT(str.data, ElementsAre('t', 'e', 's', 't', '_', 'i', 'm', 'p', 'l', '\0'));
 }
 
 TEST(FixedString, Equality) {
-    auto str1 = FixedString("test");
-    auto str2 = FixedString("test");
-    EXPECT_TRUE(areFixedStringsEqual(str1, str2));
+    EXPECT_TRUE(areFixedStringsEqual(FixedString(""), FixedString("")));
+    EXPECT_TRUE(areFixedStringsEqual(FixedString("test"), FixedString("test")));
 }
 
 TEST(FixedString, Inequality) {
-    auto str1 = FixedString("test");
-    auto str2 = FixedString("test1");
-    EXPECT_FALSE(areFixedStringsEqual(str1, str2));
+    EXPECT_FALSE(areFixedStringsEqual(FixedString("test"), FixedString("test1")));
+    EXPECT_FALSE(areFixedStringsEqual(FixedString("test"), FixedString("")));
 }
