@@ -24,7 +24,25 @@ struct Column {};
 
 namespace internal {
 
+// ############################################################################
+// Concept: IsColumn
+// ############################################################################
+template <typename ...>
+struct IsColumnImpl : std::true_type {};
 
+template <typename FirstType, typename ...RestTypes>
+struct IsColumnImpl<FirstType, RestTypes...> : std::false_type {};
+
+template <FixedString FirstColName, typename FirstColType, typename ...RestColumns>
+struct IsColumnImpl<Column<FirstColName, FirstColType>, RestColumns...> {
+    static constexpr bool value = IsColumnImpl<RestColumns...>::value;
+};
+
+template <typename T>
+constexpr bool is_column_v = IsColumnImpl<T>::value;
+
+template <typename T>
+concept IsColumn = is_column_v<T>;
 
 } // namespace internal
 
