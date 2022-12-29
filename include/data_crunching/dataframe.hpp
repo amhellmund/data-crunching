@@ -16,12 +16,19 @@
 #define DATA_CRUNCHING_DATAFRAME_HPP
 
 #include "data_crunching/internal/column.hpp"
+#include "data_crunching/internal/name_list.hpp"
 
 namespace dacr {
 
 template <internal::IsColumn ...Columns>
+requires internal::are_names_unique_v<internal::GetColumnNames<Columns...>>
 class DataFrame {
+public:
+    template<internal::IsColumn ...OtherColumns>
+    requires internal::are_names_unique_v<internal::GetColumnNames<OtherColumns...>>
+    friend class DataFrame;
 
+private:
 };
 
 } // namespace dacr

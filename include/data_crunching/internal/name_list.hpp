@@ -20,10 +20,14 @@
 namespace dacr::internal {
 
 template <FixedString ...Names>
-struct NameList {};
+struct NameList {
+    static constexpr std::size_t getSize() {
+        return sizeof...(Names);
+    }
+};
 
 // ############################################################################
-// TMP: Prepend To Name List
+// Trait: Prepend To Name List
 // ############################################################################
 template <FixedString, typename>
 struct NameListPrependImpl {};
@@ -35,6 +39,34 @@ struct NameListPrependImpl<NameToPrepend, NameList<Names...>> {
 
 template <FixedString NameToPrepend, typename NameList>
 using NameListPrepend = typename NameListPrependImpl<NameToPrepend, NameList>::type;
+
+// ############################################################################
+// Trait: Are Names Unique
+// ############################################################################
+template <FixedString, FixedString ...>
+struct AreNamesUniqueInnerIterator : std::true_type {};
+
+template <FixedString NameToCheck, FixedString FirstName, FixedString ...RestNames>
+struct AreNamesUniqueInnerIterator<NameToCheck, FirstName, RestNames...> {
+    static constexpr bool value = (
+        (not areFixedStringsEqual(NameToCheck, FirstName)) && 
+        AreNamesUniqueInnerIterator<NameToCheck, RestNames...>::value
+    );
+};
+
+template <typename ...T>
+struct AreNamesUniqueImpl : std::true_type{};
+
+template <FixedString FirstName, FixedString ...RestNames>
+struct AreNamesUniqueImpl<NameList<FirstName, RestNames...>> {
+    static constexpr bool value = (
+        AreNamesUniqueInnerIterator<FirstName, RestNames...>::value && 
+        AreNamesUniqueImpl<NameList<RestNames...>>::value
+    );
+};
+
+template <typename NameList>
+inline constexpr bool are_names_unique_v = (NameList::getSize() <= 1 || AreNamesUniqueImpl<NameList>::value);
 
 } // namespace dacr::internal
 

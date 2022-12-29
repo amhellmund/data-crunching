@@ -20,8 +20,14 @@
 
 using dacr::internal::NameList;
 using dacr::internal::NameListPrepend;
+using dacr::internal::are_names_unique_v;
 
-TEST(FixedString, AppendToEmptyNameList) {
+TEST(NameList, Size) {
+    EXPECT_EQ((NameList<>::getSize()), 0);
+    EXPECT_EQ((NameList<"first">::getSize()), 1);
+}
+
+TEST(NameList, AppendToEmptyNameList) {
     EXPECT_TRUE((
         std::is_same_v<
             NameListPrepend<"first", NameList<>>,
@@ -35,4 +41,18 @@ TEST(FixedString, AppendToEmptyNameList) {
             NameList<"first", "second">
         >
     ));
+}
+
+TEST(NameList, NamesAreUnique) {
+    EXPECT_TRUE((are_names_unique_v<NameList<>>));
+    EXPECT_TRUE((are_names_unique_v<NameList<"first">>));
+    EXPECT_TRUE((are_names_unique_v<NameList<"first", "second">>));
+    EXPECT_TRUE((are_names_unique_v<NameList<"first", "second", "third">>));
+}
+
+TEST(NameList, NamesAreUniqueFailure) {
+    EXPECT_FALSE((are_names_unique_v<NameList<"first", "first">>));
+    EXPECT_FALSE((are_names_unique_v<NameList<"first", "second", "first">>));
+    EXPECT_FALSE((are_names_unique_v<NameList<"first", "second", "second">>));
+    EXPECT_FALSE((are_names_unique_v<NameList<"first", "second", "third", "second">>));
 }
