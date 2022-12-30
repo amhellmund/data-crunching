@@ -23,10 +23,10 @@
 #include "data_crunching/internal/type_list.hpp"
 
 using dacr::Column;
-using dacr::internal::ConstructColumnStoreDataType;
-using dacr::internal::GetColumnTypes;
-using dacr::internal::TypeList;
-using dacr::internal::insertRangesIntoContainers;
+using dacr::DataFrame;
+using dacr::TypeList;
+
+using namespace dacr::internal;
 
 template <typename T>
 struct TestContainer {};
@@ -70,4 +70,26 @@ TEST(DataFrameInternal, RangeInsertionIntoContainer) {
     
     EXPECT_THAT(std::get<0>(column_store_data), ::testing::ElementsAre(1, 2));
     EXPECT_THAT(std::get<1>(column_store_data), ::testing::ElementsAre(2.0, 3.0));
+}
+
+TEST(DataFrameInternal, PrependDataFrame) {
+    EXPECT_TRUE((std::is_same_v<
+        DataFramePrepend<Column<"first", int>, DataFrame<>>,
+        DataFrame<Column<"first", int>>
+    >));
+
+    EXPECT_TRUE((std::is_same_v<
+        DataFramePrepend<Column<"first", int>, DataFrame<Column<"second", double>>>,
+        DataFrame<Column<"first", int>, Column<"second", double>>
+    >));
+}
+
+TEST(DataFrameInternal, GetDataFrameWithColumnsByName) {
+    EXPECT_TRUE((std::is_same_v<
+        GetDataFrameWithColumnsByName<
+            NameList<"second">,
+            Column<"first", int>, Column<"second", double>, Column<"third", float>
+        >,
+        DataFrame<Column<"second", double>>
+    >));
 }

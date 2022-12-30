@@ -91,6 +91,40 @@ inline void insertRangesIntoContainers (ColumnStoreData& column_store_data, std:
     ((insertRangeIntoContainerImpl(std::get<Indices>(column_store_data), element_count, std::forward<Ranges>(ranges))), ...);
 }
 
+// ############################################################################
+// Trait: Prepend DataFrame
+// ############################################################################
+template <typename ...>
+struct DataFramePrependImpl {};
+
+template <typename TypeToPrepend, typename ...TypesInDataFrame>
+struct DataFramePrependImpl<TypeToPrepend, DataFrame<TypesInDataFrame...>> {
+    using type = DataFrame<TypeToPrepend, TypesInDataFrame...>;
+};
+
+template <typename TypeToPrepend, typename DataFrameType>
+using DataFramePrepend = typename DataFramePrependImpl<TypeToPrepend, DataFrameType>::type; 
+
+// ############################################################################
+// Trait: Get DataFrame With Columns By Names
+// ############################################################################
+template <typename, typename ...>
+struct GetDataFrameWithColumnsByNameImpl {
+    using type = DataFrame<>;
+};
+
+template <FixedString FirstNameToSelect, FixedString ...RestNamesToSelect, typename ...Columns>
+struct GetDataFrameWithColumnsByNameImpl<NameList<FirstNameToSelect, RestNamesToSelect...>, Columns...> {
+    using type = DataFramePrepend<
+        GetColumnByName<FirstNameToSelect, Columns...>,
+        typename GetDataFrameWithColumnsByNameImpl<NameList<RestNamesToSelect...>, Columns...>::type
+    >;
+};
+
+template <typename Names, typename ...Columns>
+using GetDataFrameWithColumnsByName = typename GetDataFrameWithColumnsByNameImpl<Names, Columns...>::type;
+
+
 } // namespace internal
 
 } // namespace dacr

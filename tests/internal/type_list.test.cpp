@@ -18,7 +18,7 @@
 
 #include "data_crunching/internal/type_list.hpp"
 
-using dacr::internal::TypeList;
+using dacr::TypeList;
 using dacr::internal::TypeListPrepend;
 
 TEST(TypeList, Size) {

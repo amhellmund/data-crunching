@@ -21,11 +21,9 @@
 #include "data_crunching/internal/type_list.hpp"
 #include "data_crunching/internal/utils.hpp"
 
-using dacr::internal::TuplePrepend;
-using dacr::internal::TypeList;
-using dacr::internal::is_convertible_to;
-using dacr::internal::ExtractValueTypesFromRanges;
-using dacr::internal::getMinSizeFromRanges;
+using dacr::TypeList;
+
+using namespace dacr::internal;
 
 TEST(Tuple, TuplePrepend) {
     EXPECT_TRUE((std::is_same_v<
@@ -71,4 +69,11 @@ TEST(Ranges, GetMinSizeFromRanges) {
     EXPECT_EQ(getMinSizeFromRanges(first, second), 1);
     std::array<float, 3> third{3.0f, 4.0f, 5.0f};
     EXPECT_EQ(getMinSizeFromRanges(third, second, first), 1);
+}
+
+TEST(IntegerSequence, IntegerSequencePrepend) {
+    EXPECT_TRUE((std::is_same_v<
+        IntegerSequencePrepend<0, std::integer_sequence<std::size_t>>,
+        std::integer_sequence<std::size_t, 0>
+    >));   
 }

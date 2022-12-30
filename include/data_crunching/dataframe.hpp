@@ -35,6 +35,7 @@ public:
 
     DataFrame() = default;
 
+
     // ############################################################################
     // API: Get Size
     // ############################################################################
@@ -53,7 +54,7 @@ public:
     template <typename ...TypesToInsert>
     requires (
         sizeof...(TypesToInsert) == sizeof...(Columns) &&
-        internal::is_convertible_to<internal::TypeList<TypesToInsert...>, internal::GetColumnTypes<Columns...>>
+        internal::is_convertible_to<TypeList<TypesToInsert...>, internal::GetColumnTypes<Columns...>>
     )
     void insert (TypesToInsert&& ...values) {
         // this step is necessary to guarantee exception-saftey to at least keep the state of the column store
@@ -96,9 +97,9 @@ public:
         internal::are_names_in_columns<internal::NameList<ColumnNames...>, Columns...>
     )
     auto select () {
-        // using ReturnType = typename SelectColumnsByNameList<utils::fixedstringlist<Names...>, Columns...>::type;
-        // using Index = typename GetColumnIndicesByNameList<utils::fixedstringlist<Names...>, Columns...>::type;
-        // return select_impl<ReturnType>(Index{});
+        using NewDataFrame = internal::GetDataFrameWithColumnsByName<internal::NameList<ColumnNames...>, Columns...>;
+        using SelectedColumnIndices = internal::GetColumnIndicesByNames<internal::NameList<ColumnNames...>, Columns...>;
+        return selectImpl<NewDataFrame>(SelectedColumnIndices{});
     }
 
 private:
@@ -119,6 +120,13 @@ private:
     template <typename ...TypesToInsert, std::size_t ...Indices>
     void insertImpl (TypesToInsert&& ...values, std::integer_sequence<std::size_t, Indices...>) {
         (std::get<Indices>(column_store_data_).push_back(std::forward<TypesToInsert>(values)), ...);
+    }
+
+    template <typename NewDataFrame, std::size_t ...Indices>
+    auto selectImpl(std::integer_sequence<std::size_t, Indices...>) {
+        NewDataFrame result;
+        result.insertRanges(std::get<Indices>(column_store_data_)...);
+        return result;
     }
 
     ColumnStoreDataType column_store_data_{};

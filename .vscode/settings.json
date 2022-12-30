@@ -69,6 +69,8 @@
         "ios": "cpp",
         "locale": "cpp",
         "ranges": "cpp",
-        "span": "cpp"
+        "span": "cpp",
+        "__hash_table": "cpp",
+        "__tree": "cpp"
     }
 }

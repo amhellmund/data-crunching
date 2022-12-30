@@ -17,7 +17,7 @@
 
 #include "data_crunching/internal/fixed_string.hpp"
 
-namespace dacr::internal {
+namespace dacr {
 
 template <typename ...Types>
 struct TypeList {
@@ -25,6 +25,8 @@ struct TypeList {
         return sizeof...(Types);
     }
 };
+
+namespace internal {
 
 // ############################################################################
 // Trait: Get Column Types
@@ -40,6 +42,8 @@ struct TypeListPrependImpl<TypeToPrepend, TypeList<TypesInList...>> {
 template <typename TypeToPrepend, typename List>
 using TypeListPrepend = typename TypeListPrependImpl<TypeToPrepend, List>::type;
 
-} // namespace dacr::internal
+} // namespace internal
+
+} // namespace dacr
 
 #endif // DATA_CRUNCHING_INTERNAL_TYPE_LIST_HPP

@@ -56,3 +56,21 @@ TEST(DataFrame, InsertRanges) {
     EXPECT_THAT((testdf.getColumn<"int">()), ::testing::ElementsAre(1, 2, 3));
     EXPECT_THAT((testdf.getColumn<"dbl">()), ::testing::ElementsAre(1.5, 2.5, 3.5));
 }
+
+TEST(DataFrame, Select) {
+    DataFrame<
+        Column<"int", int>,
+        Column<"dbl", double>,
+        Column<"chr", char>
+    > testdf;
+    testdf.insert(10, 20.0, 'A');
+    testdf.insert(100, 200.0, 'B');
+
+    auto newdf = testdf.select<"int", "chr">();
+    EXPECT_TRUE((std::is_same_v<
+        decltype(newdf),
+        DataFrame<Column<"int", int>, Column<"chr", char>>
+    >));
+    EXPECT_THAT(newdf.getColumn<"int">(), ::testing::ElementsAre(10, 100));
+    EXPECT_THAT(newdf.getColumn<"chr">(), ::testing::ElementsAre('A', 'B'));
+}

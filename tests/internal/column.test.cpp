@@ -18,11 +18,8 @@
 #include "data_crunching/internal/column.hpp"
 
 using dacr::Column;
-using dacr::internal::is_column;
-using dacr::internal::GetColumnNames;
-using dacr::internal::NameList;
-using dacr::internal::are_names_in_columns;
-using dacr::internal::get_column_index_by_name;
+
+using namespace dacr::internal;
 
 TEST(Column, IsColumn) {
     EXPECT_TRUE((is_column<dacr::Column<"name", int>>));
@@ -70,4 +67,31 @@ TEST(Column, GetColumnIndexByName) {
     EXPECT_EQ((get_column_index_by_name<"test",
         Column<"first", double>, Column<"test", int>
     >), 1);
+}
+
+TEST(Column, GetColumnByName) {
+    EXPECT_TRUE((std::is_same_v<
+        GetColumnByName<"test", Column<"test", int>>,
+        Column<"test", int>
+    >));
+
+    EXPECT_TRUE((std::is_same_v<
+        GetColumnByName<"test", Column<"first", double>, Column<"test", int>>,
+        Column<"test", int>
+    >));
+
+    EXPECT_TRUE((std::is_same_v<
+        GetColumnByName<"test1", Column<"first", double>>,
+        void
+    >));
+}
+
+TEST(Column, GetColumnIndicesByNames) {
+    EXPECT_TRUE((std::is_same_v<
+        GetColumnIndicesByNames<
+            NameList<"test", "test1">,
+            Column<"first", double>, Column<"test", int>, Column<"second", float>, Column<"test1", char>
+        >,
+        std::integer_sequence<std::size_t, 1, 3>
+    >));
 }

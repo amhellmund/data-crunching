@@ -37,6 +37,20 @@ template <typename TypeToPrepend, typename Tuple>
 using TuplePrepend = typename TuplePrependImpl<TypeToPrepend, Tuple>::type;
 
 // ############################################################################
+// Trait: Integer Sequence Prepend
+// ############################################################################
+template <std::size_t, typename>
+struct IntegerSequencePrependImpl {};
+
+template <std::size_t NumberToPrepend, std::size_t ...NumbersInSequence>
+struct IntegerSequencePrependImpl<NumberToPrepend, std::integer_sequence<std::size_t, NumbersInSequence...>> {
+    using type = std::integer_sequence<std::size_t, NumberToPrepend, NumbersInSequence...>;
+};
+
+template <std::size_t NumberToPrepend, typename Sequence>
+using IntegerSequencePrepend = typename IntegerSequencePrependImpl<NumberToPrepend, Sequence>::type;
+
+// ############################################################################
 // Trait: Is Convertible To Types
 // ############################################################################
 template <typename ...>

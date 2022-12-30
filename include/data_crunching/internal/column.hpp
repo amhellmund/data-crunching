@@ -17,6 +17,7 @@
 
 #include "data_crunching/internal/fixed_string.hpp"
 #include "data_crunching/internal/name_list.hpp"
+#include "data_crunching/internal/utils.hpp"
 
 namespace dacr {
 
@@ -91,7 +92,7 @@ template <typename NameList, typename ...Columns>
 constexpr bool are_names_in_columns = AreNamesInColumnsImpl<NameList, Columns...>::value;
 
 // ############################################################################
-// Trait: Get Column Index By Name
+// Trait: Get Column Index/Indices By Name
 // ############################################################################
 template <std::size_t LoopIndex, FixedString, typename ...>
 struct GetColumnIndexByNameImpl {
@@ -111,6 +112,44 @@ struct GetColumnIndexByNameImpl<LoopIndex, NameToSearch, Column<FirstColName, Fi
 template <FixedString NameToSearch, typename ...Columns>
 constexpr std::size_t get_column_index_by_name = GetColumnIndexByNameImpl<0, NameToSearch, Columns...>::index;
 
+template <typename ...>
+struct GetColumnIndicesByNamesImpl {
+    using type = std::integer_sequence<std::size_t>;
+};
+
+template <FixedString FirstNameToSearch, FixedString ...RestNamesToSearch, typename ...Columns>
+struct GetColumnIndicesByNamesImpl<NameList<FirstNameToSearch, RestNamesToSearch...>, Columns...> {
+    using type = IntegerSequencePrepend<
+        get_column_index_by_name<FirstNameToSearch, Columns...>,
+        typename GetColumnIndicesByNamesImpl<NameList<RestNamesToSearch...>, Columns...>::type
+    >;
+};
+
+template <typename Names, typename ...Columns>
+using GetColumnIndicesByNames = typename GetColumnIndicesByNamesImpl<Names, Columns...>::type;
+
+// ############################################################################
+// Trait: Get Column By Name
+// ############################################################################
+template <FixedString, typename ...>
+struct GetColumnByNameImpl {
+    using type = void;
+};
+
+template <FixedString NameToSearch, FixedString FirstColName, typename FirstColType, typename ...RestColumns>
+struct GetColumnByNameImpl<NameToSearch, Column<FirstColName, FirstColType>, RestColumns...> {
+    using type = std::conditional_t<
+        areFixedStringsEqual(NameToSearch, FirstColName),
+        Column<FirstColName, FirstColType>,
+        typename GetColumnByNameImpl<NameToSearch, RestColumns...>::type
+    >;
+};
+
+template <FixedString NameToSearch, typename ...Columns>
+using GetColumnByName = typename GetColumnByNameImpl<NameToSearch, Columns...>::type;
+
+
+
 // 
 // template <typename ...>
 //     struct GetColumnIndicesByNameList {
@@ -124,6 +163,9 @@ constexpr std::size_t get_column_index_by_name = GetColumnIndexByNameImpl<0, Nam
 //             typename GetColumnIndicesByNameList<utils::fixedstringlist<Rest...>, Cols...>::type
 //         >::type;
 //     };
+
+
+
 
 } // namespace internal
 
