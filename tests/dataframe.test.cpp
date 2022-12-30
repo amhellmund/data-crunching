@@ -57,6 +57,22 @@ TEST(DataFrame, InsertRanges) {
     EXPECT_THAT((testdf.getColumn<"dbl">()), ::testing::ElementsAre(1.5, 2.5, 3.5));
 }
 
+TEST(DataFrame, Append) {
+    DataFrame<
+        Column<"int", int>,
+        Column<"dbl", double>,
+        Column<"chr", char>
+    > testdf1, testdf2;
+    
+    testdf1.insert(10, 20.0, 'A');
+    testdf2.insert(100, 200.0, 'B');
+    testdf1.append(testdf2);
+    EXPECT_EQ(testdf1.getSize(), 2);
+    EXPECT_THAT(testdf1.getColumn<"int">(), ::testing::ElementsAre(10, 100));
+    EXPECT_THAT(testdf1.getColumn<"dbl">(), ::testing::ElementsAre(20.0, 200.0));
+    EXPECT_THAT(testdf1.getColumn<"chr">(), ::testing::ElementsAre('A', 'B'));
+}
+
 TEST(DataFrame, Select) {
     DataFrame<
         Column<"int", int>,

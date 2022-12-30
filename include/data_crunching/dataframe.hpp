@@ -78,6 +78,14 @@ public:
     }
 
     // ############################################################################
+    // API: Append
+    // ############################################################################
+    void append (const DataFrame& df) {
+        assureSufficientCapacityInColumnStore(df.getSize(), IndicesForColumnStore{});
+        appendImpl(df, IndicesForColumnStore{});
+    }
+
+    // ############################################################################
     // API: Column (Read) Access
     // ############################################################################
     template <internal::FixedString ColumnName>
@@ -151,6 +159,11 @@ private:
         NewDataFrame result;
         result.insertRanges(std::get<Indices>(column_store_data_)...);
         return result;
+    }
+
+    template <std::size_t ...Indices>
+    void appendImpl (const DataFrame& df, std::integer_sequence<std::size_t, Indices...>) {
+        internal::insertRangesIntoContainers(column_store_data_, IndicesForColumnStore{}, df.getSize(), std::get<Indices>(df.column_store_data_)...);
     }
 
     ColumnStoreDataType column_store_data_{};
