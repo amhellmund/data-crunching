@@ -19,7 +19,8 @@
 #include "data_crunching/internal/type_list.hpp"
 
 using dacr::TypeList;
-using dacr::internal::TypeListPrepend;
+
+using namespace dacr::internal;
 
 TEST(TypeList, Size) {
     EXPECT_EQ((TypeList<>::getSize()), 0);
@@ -29,4 +30,21 @@ TEST(TypeList, Size) {
 TEST(TypeList, Prepend) {
     EXPECT_TRUE((std::is_same_v<TypeListPrepend<int, TypeList<>>, TypeList<int>>));
     EXPECT_TRUE((std::is_same_v<TypeListPrepend<double, TypeList<int>>, TypeList<double, int>>));
+}
+
+TEST(TypeList, ConvertTypeListToTuple) {
+    EXPECT_TRUE((std::is_same_v<
+        ConvertTypeListToTuple<TypeList<>>, 
+        std::tuple<>
+    >));
+
+    EXPECT_TRUE((std::is_same_v<
+        ConvertTypeListToTuple<TypeList<int>>, 
+        std::tuple<int>
+    >));
+
+    EXPECT_TRUE((std::is_same_v<
+        ConvertTypeListToTuple<TypeList<int, double>>, 
+        std::tuple<int, double>
+    >));
 }

@@ -29,7 +29,7 @@ struct TypeList {
 namespace internal {
 
 // ############################################################################
-// Trait: Get Column Types
+// Trait: Prepend Type List
 // ############################################################################
 template <typename, typename>
 struct TypeListPrependImpl {};
@@ -41,6 +41,20 @@ struct TypeListPrependImpl<TypeToPrepend, TypeList<TypesInList...>> {
 
 template <typename TypeToPrepend, typename List>
 using TypeListPrepend = typename TypeListPrependImpl<TypeToPrepend, List>::type;
+
+// ############################################################################
+// Trait: Convert TypeList To Tuple
+// ############################################################################
+template <typename>
+struct ConvertTypeListToTupleImpl {};
+
+template <typename ...Types>
+struct ConvertTypeListToTupleImpl<TypeList<Types...>> {
+    using type = std::tuple<Types...>;
+};
+
+template <typename Types>
+using ConvertTypeListToTuple = typename ConvertTypeListToTupleImpl<Types>::type;
 
 } // namespace internal
 
