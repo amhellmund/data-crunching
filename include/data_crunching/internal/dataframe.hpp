@@ -69,6 +69,28 @@ struct GetColumnTypesImpl<Column<FirstColName, FirstColType>, RestColumns...> {
 template <typename ...Columns>
 using GetColumnTypes = typename GetColumnTypesImpl<Columns...>::type;
 
+// ############################################################################
+// Range Insertion
+// ############################################################################
+template <typename Container, internal::IsRangeWithSize Range>
+requires (
+    requires(Container& c) {
+        c.push_back(std::declval<std::ranges::range_value_t<Range>>());
+    }
+)
+inline void insertRangeIntoContainerImpl (Container& container, std::size_t element_count, Range&& range) {
+    auto iterator = std::forward<Range>(range).begin();
+    for (auto i = 0L; i < element_count; ++i) {
+        container.push_back(*iterator);
+        ++iterator;
+    }
+}
+
+template <typename ColumnStoreData, std::size_t ...Indices, internal::IsRangeWithSize ...Ranges>
+inline void insertRangesIntoContainers (ColumnStoreData& column_store_data, std::integer_sequence<std::size_t, Indices...>, std::size_t element_count, Ranges&& ...ranges) {
+    ((insertRangeIntoContainerImpl(std::get<Indices>(column_store_data), element_count, std::forward<Ranges>(ranges))), ...);
+}
+
 } // namespace internal
 
 } // namespace dacr

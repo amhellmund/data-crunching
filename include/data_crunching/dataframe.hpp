@@ -15,6 +15,7 @@
 #ifndef DATA_CRUNCHING_DATAFRAME_HPP
 #define DATA_CRUNCHING_DATAFRAME_HPP
 
+#include <ranges>
 #include <vector>
 
 #include "data_crunching/internal/dataframe.hpp"
@@ -55,8 +56,39 @@ public:
         internal::is_convertible_to_v<internal::TypeList<TypesToInsert...>, internal::GetColumnTypes<Columns...>>
     )
     void insert (TypesToInsert&& ...values) {
+        // this step is necessary to guarantee exception-saftey to at least keep the state of the column store
+        // as before the call
         assure_sufficient_capacity_in_column_store(1, IndicesForColumnStore{});
         insert_impl<TypesToInsert...>(std::forward<TypesToInsert>(values)..., IndicesForColumnStore{});
+    }
+
+    // ############################################################################
+    // API: Range Insertion
+    // ############################################################################
+    template <internal::IsRangeWithSize ...Ranges>
+    requires (
+        sizeof...(Ranges) == sizeof...(Columns) && 
+        internal::is_convertible_to_v<internal::ExtractValueTypesFromRanges<Ranges...>, internal::GetColumnTypes<Columns...>>
+    )
+    void insert_ranges (Ranges&& ...ranges) {
+        const std::size_t min_size = internal::getMinSizeFromRanges(std::forward<Ranges>(ranges)...);
+        assure_sufficient_capacity_in_column_store(min_size, IndicesForColumnStore{});
+        auto iterators = std::make_tuple(ranges.begin()...);
+        for (auto i = 0LU; i < min_size; ++i) {
+            std::apply([this](auto ...values) {
+                this->insert_impl()
+            }, );
+        }
+        
+        
+        // auto iterators = std::make_tuple(ranges.begin()...);
+        // auto sentinels = std::make_tuple(ranges.end()...);
+        // while (all_not_equal_to_sentinel(iterators, sentinels)) {
+        //     std::apply([this](auto ... values) {
+        //         this->insert(values...);
+        //     }, get_values(iterators));
+        //     advance_iterators(iterators);
+        // }
     }
 
 private:

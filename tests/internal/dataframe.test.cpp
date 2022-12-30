@@ -16,6 +16,7 @@
 #include <gmock/gmock.h>
 
 #include <type_traits>
+#include <vector>
 
 #include "data_crunching/internal/column.hpp"
 #include "data_crunching/internal/dataframe.hpp"
@@ -25,6 +26,7 @@ using dacr::Column;
 using dacr::internal::ConstructColumnStoreDataType;
 using dacr::internal::GetColumnTypes;
 using dacr::internal::TypeList;
+using dacr::internal::insertRangesIntoContainers;
 
 template <typename T>
 struct TestContainer {};
@@ -55,4 +57,14 @@ TEST(DataFrameInternal, GetColumnTypes) {
         GetColumnTypes<Column<"int", int>, Column<"dbl", double>>,
         TypeList<int, double>
     >));
+}
+
+TEST(DataFrameInternal, RangeInsertionIntoContainer) {
+    using ColumnStoreData = std::tuple<std::vector<int>, std::vector<double>>;
+    ColumnStoreData column_store_data{};
+    
+    std::vector<int> input_range_int {1, 2, 3};
+    std::vector<double> input_range_dbl {2.0, 3.0};
+
+    insertRangesIntoContainers(column_store_data, std::make_index_sequence<2>{}, 2, input_range_int, input_range_dbl);
 }

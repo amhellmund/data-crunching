@@ -16,6 +16,7 @@
 #include <gmock/gmock.h>
 
 #include <type_traits>
+#include <array>
 
 #include "data_crunching/internal/type_list.hpp"
 #include "data_crunching/internal/utils.hpp"
@@ -23,6 +24,8 @@
 using dacr::internal::TuplePrepend;
 using dacr::internal::TypeList;
 using dacr::internal::is_convertible_to_v;
+using dacr::internal::ExtractValueTypesFromRanges;
+using dacr::internal::getMinSizeFromRanges;
 
 TEST(Tuple, TuplePrepend) {
     EXPECT_TRUE((std::is_same_v<
@@ -36,11 +39,36 @@ TEST(Tuple, TuplePrepend) {
     >));
 }
 
-TEST(DataFrameInternal, IsConvertibleTo) {
+TEST(TypeList, IsConvertibleTo) {
     EXPECT_TRUE((is_convertible_to_v<TypeList<>, TypeList<>>));
     EXPECT_TRUE((is_convertible_to_v<TypeList<short>, TypeList<int>>));
     EXPECT_TRUE((is_convertible_to_v<TypeList<int, float>, TypeList<long, double>>));
 
     struct NonConvertibleTo{};
     EXPECT_FALSE((is_convertible_to_v<TypeList<int>, TypeList<NonConvertibleTo>>));
+}
+
+TEST(Ranges, ExtractValueTypes) {
+    EXPECT_TRUE((std::is_same_v<
+        ExtractValueTypesFromRanges<>,
+        TypeList<>
+    >));
+
+    EXPECT_TRUE((std::is_same_v<
+        ExtractValueTypesFromRanges<std::array<int, 1>>,
+        TypeList<int>
+    >));
+
+    EXPECT_TRUE((std::is_same_v<
+        ExtractValueTypesFromRanges<std::array<int, 1>, std::array<double, 1>>,
+        TypeList<int, double>
+    >));
+}
+
+TEST(Ranges, GetMinSizeFromRanges) {
+    std::array<int, 1> first{0};
+    std::array<double, 2> second{1.0, 2.0};
+    EXPECT_EQ(getMinSizeFromRanges(first, second), 1);
+    std::array<float, 3> third{3.0f, 4.0f, 5.0f};
+    EXPECT_EQ(getMinSizeFromRanges(third, second, first), 1);
 }
