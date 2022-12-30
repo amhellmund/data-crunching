@@ -24,6 +24,11 @@ namespace dacr {
 template <internal::FixedString Name, typename Type>
 struct Column {};
 
+template <internal::FixedString ...Names>
+struct Select {};
+
+struct SelectAll{};
+
 namespace internal {
 
 // ############################################################################
@@ -148,24 +153,45 @@ struct GetColumnByNameImpl<NameToSearch, Column<FirstColName, FirstColType>, Res
 template <FixedString NameToSearch, typename ...Columns>
 using GetColumnByName = typename GetColumnByNameImpl<NameToSearch, Columns...>::type;
 
+// ############################################################################
+// Trait: Is Valid Select
+// ############################################################################
+template <typename ...>
+struct IsValidSelectImpl : std::false_type {};
 
+template <typename ...Columns>
+struct IsValidSelectImpl<SelectAll, Columns...> : std::true_type {};
 
-// 
-// template <typename ...>
-//     struct GetColumnIndicesByNameList {
-//         using type = std::integer_sequence<std::size_t>;
-//     };
+template <FixedString ...ColumnNames, typename ...Columns>
+struct IsValidSelectImpl<Select<ColumnNames...>, Columns...> {
+    static constexpr bool value = (
+        sizeof...(ColumnNames) > 0 &&
+        internal::are_names_unique<NameList<ColumnNames...>> &&
+        internal::are_names_in_columns<NameList<ColumnNames...>, Columns...>
+    );
+};
 
-//     template <utils::FixedString First, utils::FixedString ...Rest, typename ...Cols>
-//     struct GetColumnIndicesByNameList<utils::fixedstringlist<First, Rest...>, Cols...> {
-//         using type = typename utils::integer_sequence_prepend<
-//             GetIndexByName<First>,
-//             typename GetColumnIndicesByNameList<utils::fixedstringlist<Rest...>, Cols...>::type
-//         >::type;
-//     };
+template <typename SelectNames, typename ...Columns>
+constexpr bool is_valid_select = IsValidSelectImpl<SelectNames, Columns...>::value;
 
+// ############################################################################
+// Trait: Get Select Names
+// ############################################################################
+template <typename ...>
+struct GetSelectNameListImpl {};
 
+template <typename ...Columns>
+struct GetSelectNameListImpl<SelectAll, Columns...> {
+    using type = GetColumnNames<Columns...>;
+};
 
+template <FixedString ...ColumnNames, typename ...Columns>
+struct GetSelectNameListImpl<Select<ColumnNames...>, Columns...> {
+    using type = NameList<ColumnNames...>;
+};
+
+template <typename SelectNames, typename ...Columns>
+using GetSelectNameList = typename GetSelectNameListImpl<SelectNames, Columns...>::type;
 
 } // namespace internal
 

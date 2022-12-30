@@ -18,6 +18,8 @@
 #include "data_crunching/internal/column.hpp"
 
 using dacr::Column;
+using dacr::Select;
+using dacr::SelectAll;
 
 using namespace dacr::internal;
 
@@ -93,5 +95,24 @@ TEST(Column, GetColumnIndicesByNames) {
             Column<"first", double>, Column<"test", int>, Column<"second", float>, Column<"test1", char>
         >,
         std::integer_sequence<std::size_t, 1, 3>
+    >));
+}
+
+TEST(Select, IsValidSelect) {
+    EXPECT_TRUE((is_valid_select<SelectAll, Column<"first", int>>));
+    EXPECT_TRUE((is_valid_select<Select<"first">, Column<"first", int>>));
+    EXPECT_FALSE((is_valid_select<Select<>, Column<"first", int>>));
+    EXPECT_FALSE((is_valid_select<Select<"test">, Column<"first", int>>));
+}
+
+TEST(Select, GetSelectNameList) {
+    EXPECT_TRUE((std::is_same_v<
+        GetSelectNameList<SelectAll, Column<"first", int>>,
+        NameList<"first">
+    >));
+
+    EXPECT_TRUE((std::is_same_v<
+        GetSelectNameList<Select<"first">, Column<"first", int>>,
+        NameList<"first">
     >));
 }
