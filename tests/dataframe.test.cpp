@@ -35,14 +35,11 @@ TEST(DataFrame, InsertScalarValues) {
     > testdf;
     
     EXPECT_EQ(testdf.getSize(), 0);
-    testdf.insert(10, 20.0);
+    testdf.insert(10, 30.0);
     EXPECT_EQ(testdf.getSize(), 1);
-    for (int i = 0; i < 9; ++i) {
-        testdf.insert(i, static_cast<double>(i*20));
-    }
-    EXPECT_EQ(testdf.getSize(), 10);
-
-    // test on concrete values once the column interface is available
+    testdf.insert(20, 60.0);
+    EXPECT_THAT((testdf.getColumn<"int">()), ::testing::ElementsAre(10, 20));
+    EXPECT_THAT((testdf.getColumn<"dbl">()), ::testing::ElementsAre(30.0, 60.0));
 }
 
 TEST(DataFrame, InsertRanges) {
@@ -55,6 +52,7 @@ TEST(DataFrame, InsertRanges) {
     std::vector<double> rng_dbl {1.5, 2.5, 3.5};
 
     EXPECT_EQ(testdf.getSize(), 0);
-    testdf.insert_ranges(rng_int, rng_dbl);
-    EXPECT_EQ(testdf.getSize(), 3);
+    testdf.insertRanges(rng_int, rng_dbl);
+    EXPECT_THAT((testdf.getColumn<"int">()), ::testing::ElementsAre(1, 2, 3));
+    EXPECT_THAT((testdf.getColumn<"dbl">()), ::testing::ElementsAre(1.5, 2.5, 3.5));
 }

@@ -58,8 +58,8 @@ public:
     void insert (TypesToInsert&& ...values) {
         // this step is necessary to guarantee exception-saftey to at least keep the state of the column store
         // as before the call
-        assure_sufficient_capacity_in_column_store(1, IndicesForColumnStore{});
-        insert_impl<TypesToInsert...>(std::forward<TypesToInsert>(values)..., IndicesForColumnStore{});
+        assureSufficientCapacityInColumnStore(1, IndicesForColumnStore{});
+        insertImpl<TypesToInsert...>(std::forward<TypesToInsert>(values)..., IndicesForColumnStore{});
     }
 
     // ############################################################################
@@ -70,10 +70,20 @@ public:
         sizeof...(Ranges) == sizeof...(Columns) && 
         internal::is_convertible_to_v<internal::ExtractValueTypesFromRanges<Ranges...>, internal::GetColumnTypes<Columns...>>
     )
-    void insert_ranges (Ranges&& ...ranges) {
+    void insertRanges (Ranges&& ...ranges) {
         const std::size_t min_size = internal::getMinSizeFromRanges(std::forward<Ranges>(ranges)...);
-        assure_sufficient_capacity_in_column_store(min_size, IndicesForColumnStore{});
+        assureSufficientCapacityInColumnStore(min_size, IndicesForColumnStore{});
         internal::insertRangesIntoContainers(column_store_data_, IndicesForColumnStore{}, min_size, std::forward<Ranges>(ranges)...);
+    }
+
+    // ############################################################################
+    // API: Column (Read) Access
+    // ############################################################################
+    template <internal::FixedString ColumnName>
+    requires (internal::is_name_in_columns_v<ColumnName, Columns...>)
+    const auto& getColumn () const {
+        constexpr auto index = internal::get_column_index_by_name<ColumnName, Columns...>;
+        return std::get<index>(column_store_data_);
     }
 
 private:
@@ -81,7 +91,7 @@ private:
     using IndicesForColumnStore = std::index_sequence_for<Columns...>;
 
     template <std::size_t ...Indices>
-    void assure_sufficient_capacity_in_column_store (std::size_t amount_to_insert, std::integer_sequence<std::size_t, Indices...>) {
+    void assureSufficientCapacityInColumnStore (std::size_t amount_to_insert, std::integer_sequence<std::size_t, Indices...>) {
         if constexpr (sizeof...(Columns) > 0) {
             const auto& first_column_data = std::get<0>(column_store_data_);
             if (first_column_data.size() + amount_to_insert >= first_column_data.capacity()) {
@@ -92,7 +102,7 @@ private:
     }
 
     template <typename ...TypesToInsert, std::size_t ...Indices>
-    void insert_impl (TypesToInsert&& ...values, std::integer_sequence<std::size_t, Indices...>) {
+    void insertImpl (TypesToInsert&& ...values, std::integer_sequence<std::size_t, Indices...>) {
         (std::get<Indices>(column_store_data_).push_back(std::forward<TypesToInsert>(values)), ...);
     }
 
