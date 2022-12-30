@@ -67,4 +67,7 @@ TEST(DataFrameInternal, RangeInsertionIntoContainer) {
     std::vector<double> input_range_dbl {2.0, 3.0};
 
     insertRangesIntoContainers(column_store_data, std::make_index_sequence<2>{}, 2, input_range_int, input_range_dbl);
+    
+    EXPECT_THAT(std::get<0>(column_store_data), ::testing::ElementsAre(1, 2));
+    EXPECT_THAT(std::get<1>(column_store_data), ::testing::ElementsAre(2.0, 3.0));
 }

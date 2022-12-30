@@ -73,22 +73,7 @@ public:
     void insert_ranges (Ranges&& ...ranges) {
         const std::size_t min_size = internal::getMinSizeFromRanges(std::forward<Ranges>(ranges)...);
         assure_sufficient_capacity_in_column_store(min_size, IndicesForColumnStore{});
-        auto iterators = std::make_tuple(ranges.begin()...);
-        for (auto i = 0LU; i < min_size; ++i) {
-            std::apply([this](auto ...values) {
-                this->insert_impl()
-            }, );
-        }
-        
-        
-        // auto iterators = std::make_tuple(ranges.begin()...);
-        // auto sentinels = std::make_tuple(ranges.end()...);
-        // while (all_not_equal_to_sentinel(iterators, sentinels)) {
-        //     std::apply([this](auto ... values) {
-        //         this->insert(values...);
-        //     }, get_values(iterators));
-        //     advance_iterators(iterators);
-        // }
+        internal::insertRangesIntoContainers(column_store_data_, IndicesForColumnStore{}, min_size, std::forward<Ranges>(ranges)...);
     }
 
 private:

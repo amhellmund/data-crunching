@@ -15,6 +15,8 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 
+#include <vector>
+
 #include "data_crunching/dataframe.hpp"
 
 using dacr::Column;
@@ -39,4 +41,20 @@ TEST(DataFrame, InsertScalarValues) {
         testdf.insert(i, static_cast<double>(i*20));
     }
     EXPECT_EQ(testdf.getSize(), 10);
+
+    // test on concrete values once the column interface is available
+}
+
+TEST(DataFrame, InsertRanges) {
+    DataFrame<
+        Column<"int", int>,
+        Column<"dbl", double>
+    > testdf;
+
+    std::vector<int> rng_int {1, 2, 3};
+    std::vector<double> rng_dbl {1.5, 2.5, 3.5};
+
+    EXPECT_EQ(testdf.getSize(), 0);
+    testdf.insert_ranges(rng_int, rng_dbl);
+    EXPECT_EQ(testdf.getSize(), 3);
 }
