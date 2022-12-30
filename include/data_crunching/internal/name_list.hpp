@@ -66,7 +66,7 @@ struct AreNamesUniqueImpl<NameList<FirstName, RestNames...>> {
 };
 
 template <typename NameList>
-inline constexpr bool are_names_unique_v = (NameList::getSize() <= 1 || AreNamesUniqueImpl<NameList>::value);
+inline constexpr bool are_names_unique = (NameList::getSize() <= 1 || AreNamesUniqueImpl<NameList>::value);
 
 } // namespace dacr::internal
 

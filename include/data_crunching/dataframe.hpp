@@ -26,11 +26,11 @@
 namespace dacr {
 
 template <internal::IsColumn ...Columns>
-requires internal::are_names_unique_v<internal::GetColumnNames<Columns...>>
+requires internal::are_names_unique<internal::GetColumnNames<Columns...>>
 class DataFrame {
 public:
     template<internal::IsColumn ...OtherColumns>
-    requires internal::are_names_unique_v<internal::GetColumnNames<OtherColumns...>>
+    requires internal::are_names_unique<internal::GetColumnNames<OtherColumns...>>
     friend class DataFrame;
 
     DataFrame() = default;
@@ -53,7 +53,7 @@ public:
     template <typename ...TypesToInsert>
     requires (
         sizeof...(TypesToInsert) == sizeof...(Columns) &&
-        internal::is_convertible_to_v<internal::TypeList<TypesToInsert...>, internal::GetColumnTypes<Columns...>>
+        internal::is_convertible_to<internal::TypeList<TypesToInsert...>, internal::GetColumnTypes<Columns...>>
     )
     void insert (TypesToInsert&& ...values) {
         // this step is necessary to guarantee exception-saftey to at least keep the state of the column store
@@ -68,7 +68,7 @@ public:
     template <internal::IsRangeWithSize ...Ranges>
     requires (
         sizeof...(Ranges) == sizeof...(Columns) && 
-        internal::is_convertible_to_v<internal::ExtractValueTypesFromRanges<Ranges...>, internal::GetColumnTypes<Columns...>>
+        internal::is_convertible_to<internal::ExtractValueTypesFromRanges<Ranges...>, internal::GetColumnTypes<Columns...>>
     )
     void insertRanges (Ranges&& ...ranges) {
         const std::size_t min_size = internal::getMinSizeFromRanges(std::forward<Ranges>(ranges)...);
@@ -80,10 +80,25 @@ public:
     // API: Column (Read) Access
     // ############################################################################
     template <internal::FixedString ColumnName>
-    requires (internal::is_name_in_columns_v<ColumnName, Columns...>)
+    requires (internal::is_name_in_columns<ColumnName, Columns...>)
     const auto& getColumn () const {
         constexpr auto index = internal::get_column_index_by_name<ColumnName, Columns...>;
         return std::get<index>(column_store_data_);
+    }
+
+    // ############################################################################
+    // API: Select
+    // ############################################################################
+    template <internal::FixedString ...ColumnNames>
+    requires (
+        sizeof...(ColumnNames) > 0 && 
+        internal::are_names_unique<internal::NameList<ColumnNames...>> &&
+        internal::are_names_in_columns<internal::NameList<ColumnNames...>, Columns...>
+    )
+    auto select () {
+        // using ReturnType = typename SelectColumnsByNameList<utils::fixedstringlist<Names...>, Columns...>::type;
+        // using Index = typename GetColumnIndicesByNameList<utils::fixedstringlist<Names...>, Columns...>::type;
+        // return select_impl<ReturnType>(Index{});
     }
 
 private:

@@ -20,7 +20,7 @@
 
 using dacr::internal::NameList;
 using dacr::internal::NameListPrepend;
-using dacr::internal::are_names_unique_v;
+using dacr::internal::are_names_unique;
 
 TEST(NameList, Size) {
     EXPECT_EQ((NameList<>::getSize()), 0);
@@ -44,15 +44,15 @@ TEST(NameList, AppendToEmptyNameList) {
 }
 
 TEST(NameList, NamesAreUnique) {
-    EXPECT_TRUE((are_names_unique_v<NameList<>>));
-    EXPECT_TRUE((are_names_unique_v<NameList<"first">>));
-    EXPECT_TRUE((are_names_unique_v<NameList<"first", "second">>));
-    EXPECT_TRUE((are_names_unique_v<NameList<"first", "second", "third">>));
+    EXPECT_TRUE((are_names_unique<NameList<>>));
+    EXPECT_TRUE((are_names_unique<NameList<"first">>));
+    EXPECT_TRUE((are_names_unique<NameList<"first", "second">>));
+    EXPECT_TRUE((are_names_unique<NameList<"first", "second", "third">>));
 }
 
 TEST(NameList, NamesAreUniqueFailure) {
-    EXPECT_FALSE((are_names_unique_v<NameList<"first", "first">>));
-    EXPECT_FALSE((are_names_unique_v<NameList<"first", "second", "first">>));
-    EXPECT_FALSE((are_names_unique_v<NameList<"first", "second", "second">>));
-    EXPECT_FALSE((are_names_unique_v<NameList<"first", "second", "third", "second">>));
+    EXPECT_FALSE((are_names_unique<NameList<"first", "first">>));
+    EXPECT_FALSE((are_names_unique<NameList<"first", "second", "first">>));
+    EXPECT_FALSE((are_names_unique<NameList<"first", "second", "second">>));
+    EXPECT_FALSE((are_names_unique<NameList<"first", "second", "third", "second">>));
 }

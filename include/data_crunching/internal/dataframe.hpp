@@ -26,7 +26,7 @@
 namespace dacr {
 
 template <internal::IsColumn ...Columns>
-requires internal::are_names_unique_v<internal::GetColumnNames<Columns...>>
+requires internal::are_names_unique<internal::GetColumnNames<Columns...>>
 class DataFrame;
 
 namespace internal {

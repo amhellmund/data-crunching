@@ -23,7 +23,7 @@
 
 using dacr::internal::TuplePrepend;
 using dacr::internal::TypeList;
-using dacr::internal::is_convertible_to_v;
+using dacr::internal::is_convertible_to;
 using dacr::internal::ExtractValueTypesFromRanges;
 using dacr::internal::getMinSizeFromRanges;
 
@@ -40,12 +40,12 @@ TEST(Tuple, TuplePrepend) {
 }
 
 TEST(TypeList, IsConvertibleTo) {
-    EXPECT_TRUE((is_convertible_to_v<TypeList<>, TypeList<>>));
-    EXPECT_TRUE((is_convertible_to_v<TypeList<short>, TypeList<int>>));
-    EXPECT_TRUE((is_convertible_to_v<TypeList<int, float>, TypeList<long, double>>));
+    EXPECT_TRUE((is_convertible_to<TypeList<>, TypeList<>>));
+    EXPECT_TRUE((is_convertible_to<TypeList<short>, TypeList<int>>));
+    EXPECT_TRUE((is_convertible_to<TypeList<int, float>, TypeList<long, double>>));
 
     struct NonConvertibleTo{};
-    EXPECT_FALSE((is_convertible_to_v<TypeList<int>, TypeList<NonConvertibleTo>>));
+    EXPECT_FALSE((is_convertible_to<TypeList<int>, TypeList<NonConvertibleTo>>));
 }
 
 TEST(Ranges, ExtractValueTypes) {

@@ -40,10 +40,10 @@ struct IsColumnImpl<Column<FirstName, FirstType>, RestColumns...> {
 };
 
 template <typename T>
-constexpr bool is_column_v = IsColumnImpl<T>::value;
+constexpr bool is_column = IsColumnImpl<T>::value;
 
 template <typename T>
-concept IsColumn = is_column_v<T>;
+concept IsColumn = is_column<T>;
 
 // ############################################################################
 // Trait: Get Column Names
@@ -76,19 +76,19 @@ struct IsNameInColumnsImpl<NameToCheck, Column<FirstColName, FirstColType>, Rest
 };
 
 template <FixedString NameToCheck, typename ...Columns>
-constexpr bool is_name_in_columns_v = IsNameInColumnsImpl<NameToCheck, Columns...>::value;
+constexpr bool is_name_in_columns = IsNameInColumnsImpl<NameToCheck, Columns...>::value;
 
 template <typename, typename ...>
 struct AreNamesInColumnsImpl : std::true_type {};
 
 template <FixedString FirstNameToCheck, FixedString ...RestNamesToCheck, typename ...Columns>
 struct AreNamesInColumnsImpl<NameList<FirstNameToCheck, RestNamesToCheck...>, Columns...> {
-    static constexpr bool value = is_name_in_columns_v<FirstNameToCheck, Columns...> && 
+    static constexpr bool value = is_name_in_columns<FirstNameToCheck, Columns...> && 
         AreNamesInColumnsImpl<NameList<RestNamesToCheck...>, Columns...>::value;
 };
 
 template <typename NameList, typename ...Columns>
-constexpr bool are_names_in_columns_v = AreNamesInColumnsImpl<NameList, Columns...>::value;
+constexpr bool are_names_in_columns = AreNamesInColumnsImpl<NameList, Columns...>::value;
 
 // ############################################################################
 // Trait: Get Column Index By Name

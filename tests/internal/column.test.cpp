@@ -18,18 +18,18 @@
 #include "data_crunching/internal/column.hpp"
 
 using dacr::Column;
-using dacr::internal::is_column_v;
+using dacr::internal::is_column;
 using dacr::internal::GetColumnNames;
 using dacr::internal::NameList;
-using dacr::internal::are_names_in_columns_v;
+using dacr::internal::are_names_in_columns;
 using dacr::internal::get_column_index_by_name;
 
 TEST(Column, IsColumn) {
-    EXPECT_TRUE((is_column_v<dacr::Column<"name", int>>));
+    EXPECT_TRUE((is_column<dacr::Column<"name", int>>));
 }
 
 TEST(Column, NotIsColumn) {
-    EXPECT_FALSE(is_column_v<int>);
+    EXPECT_FALSE(is_column<int>);
 }
 
 TEST(Column, GetColumnNamesEmpty) {
@@ -48,17 +48,17 @@ TEST(Column, GetColumnNamesTwo) {
 }
 
 TEST(Column, AreNamesInColumnList) {
-    EXPECT_TRUE((are_names_in_columns_v<
+    EXPECT_TRUE((are_names_in_columns<
         NameList<"test">,
         Column<"test", int>
     >));
 
-    EXPECT_TRUE((are_names_in_columns_v<
+    EXPECT_TRUE((are_names_in_columns<
         NameList<"test", "test1">, 
         Column<"int", int>, Column<"test", double>, Column<"test1", char>
     >));
 
-    EXPECT_FALSE((are_names_in_columns_v<
+    EXPECT_FALSE((are_names_in_columns<
         NameList<"test">,
         Column<"test1", int>
     >));

@@ -48,7 +48,7 @@ struct IsConvertibleToTypeImpl<TypeList<FirstTypeToConvert, RestTypesToConvert..
 };
 
 template <typename TypesToConvertList, typename ColumnList>
-constexpr bool is_convertible_to_v = IsConvertibleToTypeImpl<TypesToConvertList, ColumnList>::value;
+constexpr bool is_convertible_to = IsConvertibleToTypeImpl<TypesToConvertList, ColumnList>::value;
 
 // ############################################################################
 // Trait: Extract Types From Range List
