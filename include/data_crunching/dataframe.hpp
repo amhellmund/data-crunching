@@ -18,7 +18,9 @@
 #include <ranges>
 #include <vector>
 
-#include "data_crunching/internal/dataframe.hpp"
+#include "data_crunching/internal/dataframe_general.hpp"
+#include "data_crunching/internal/dataframe_print.hpp"
+#include "data_crunching/internal/dataframe_summarize.hpp"
 #include "data_crunching/internal/column.hpp"
 #include "data_crunching/internal/name_list.hpp"
 #include "data_crunching/internal/type_list.hpp"
@@ -182,6 +184,9 @@ public:
     // ############################################################################
     // API: Print
     // ############################################################################
+    void print (std::ostream& stream = std::cout) {
+
+    }
 
 private:
     using ColumnStoreDataType = internal::ConstructColumnStoreDataType<std::vector, Columns...>;

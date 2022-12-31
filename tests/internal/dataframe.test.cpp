@@ -19,7 +19,7 @@
 #include <vector>
 
 #include "data_crunching/internal/column.hpp"
-#include "data_crunching/internal/dataframe.hpp"
+#include "data_crunching/internal/dataframe_general.hpp"
 #include "data_crunching/internal/type_list.hpp"
 
 using namespace dacr;
