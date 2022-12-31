@@ -21,10 +21,10 @@
 
 namespace dacr {
 
-template <internal::FixedString Name, typename Type>
+template <FixedString Name, typename Type>
 struct Column {};
 
-template <internal::FixedString ...Names>
+template <FixedString ...Names>
 struct Select {};
 
 struct SelectAll{};

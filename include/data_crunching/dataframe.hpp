@@ -88,7 +88,7 @@ public:
     // ############################################################################
     // API: Column (Read) Access
     // ############################################################################
-    template <internal::FixedString ColumnName>
+    template <FixedString ColumnName>
     requires (internal::is_name_in_columns<ColumnName, Columns...>)
     const auto& getColumn () const {
         constexpr auto index = internal::get_column_index_by_name<ColumnName, Columns...>;
@@ -98,7 +98,7 @@ public:
     // ############################################################################
     // API: Select
     // ############################################################################
-    template <internal::FixedString ...ColumnNames>
+    template <FixedString ...ColumnNames>
     requires (
         sizeof...(ColumnNames) > 0 && 
         internal::are_names_unique<internal::NameList<ColumnNames...>> &&
@@ -113,7 +113,7 @@ public:
     // ############################################################################
     // API: Apply
     // ############################################################################
-    template <internal::FixedString NewColumnName, typename Fun, typename SelectNames = SelectAll>
+    template <FixedString NewColumnName, typename Fun, typename SelectNames = SelectAll>
     requires (
         NewColumnName.getLength() > 0 &&
         internal::is_valid_select<SelectNames, Columns...>

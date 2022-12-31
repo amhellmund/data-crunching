@@ -18,7 +18,7 @@
 #include <cstdlib>
 #include <utility>
 
-namespace dacr::internal {
+namespace dacr {
 
 /**
  * The FixedString is used to store string literals as template-arguments in the
@@ -58,6 +58,8 @@ struct FixedString {
 template <std::size_t N>
 FixedString(const char (&str)[N]) -> FixedString<N>;
 
+namespace internal {
+
 /**
  * Equality comparison for FixedString
 */
@@ -71,6 +73,8 @@ constexpr bool areFixedStringsEqual (FixedString<N1> lhs, FixedString<N2> rhs) {
     return (N1 == N2) && areFixedStingsEqualImpl(lhs, rhs, std::make_index_sequence<std::min(N1, N2)>{});
 }
 
-} // namespace dacr::internal
+} // namespace internal
+
+} // namespace dacr
 
 #endif // DATA_CRUNCHING_INTERNAL_COLUMN_HPP

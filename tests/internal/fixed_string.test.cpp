@@ -17,7 +17,7 @@
 
 #include "data_crunching/internal/fixed_string.hpp"
 
-using dacr::internal::FixedString;
+using dacr::FixedString;
 using dacr::internal::areFixedStringsEqual;
 
 using ::testing::ElementsAre;
