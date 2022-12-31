@@ -184,7 +184,8 @@ public:
     // ############################################################################
     // API: Print
     // ############################################################################
-    void print (std::ostream& stream = std::cout) {
+    template <typename SelectNames = SelectAll>
+    void print (const PrintOptions& print_options = PrintOptions{}, std::ostream& stream = std::cout) {
 
     }
 

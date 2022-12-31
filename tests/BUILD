@@ -24,7 +24,7 @@ cc_test(
     name = "test_internal",
     srcs = [
         "internal/column.test.cpp",
-        "internal/dataframe.test.cpp",
+        "internal/dataframe_general.test.cpp",
         "internal/fixed_string.test.cpp",
         "internal/name_list.test.cpp",
         "internal/type_list.test.cpp",

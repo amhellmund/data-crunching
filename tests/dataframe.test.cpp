@@ -22,6 +22,7 @@
 using dacr::Column;
 using dacr::DataFrame;
 using dacr::Join;
+using dacr::PrintOptions;
 using dacr::Select;
 using dacr::SelectAll;
 
@@ -181,4 +182,13 @@ TEST(DataFrame, JoinWithType) {
     EXPECT_THAT(dfjoined.getColumn<"id2">(), ::testing::ElementsAre('A'));
     EXPECT_THAT(dfjoined.getColumn<"dbl">(), ::testing::ElementsAre(100.0));
     EXPECT_THAT(dfjoined.getColumn<"flt">(), ::testing::ElementsAre(50.0f));
+}
+
+TEST(DataFrame, Print) {
+    DataFrame<
+        Column<"id1", int>,
+        Column<"id2", char>,
+        Column<"dbl", double>
+    > testdf1;
+    testdf1.print<Select<"id1", "dbl">>(PrintOptions{}, std::cout);
 }
