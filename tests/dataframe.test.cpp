@@ -21,6 +21,7 @@
 
 using dacr::Column;
 using dacr::DataFrame;
+using dacr::Join;
 using dacr::Select;
 using dacr::SelectAll;
 
@@ -153,4 +154,23 @@ TEST(DataFrame, Query) {
     EXPECT_THAT(testdfallselect.getColumn<"int">(), ::testing::ElementsAre(100));
     EXPECT_THAT(testdfallselect.getColumn<"dbl">(), ::testing::ElementsAre(200.0));
     EXPECT_THAT(testdfallselect.getColumn<"chr">(), ::testing::ElementsAre('B'));
+}
+
+TEST(DataFrame, JoinWithType) {
+    DataFrame<
+        Column<"id1", int>,
+        Column<"id2", char>,
+        Column<"dbl", double>
+    > testdf1;
+    testdf1.insert(10, 'A', 100.0);
+
+    DataFrame<
+        Column<"id1", int>,
+        Column<"id2", char>,
+        Column<"float", float>
+    > testdf2;
+    testdf2.insert(10, 'A', 50.0f);
+
+    testdf1.join<Join::Inner, "id1", "id2">(testdf2);
+    
 }

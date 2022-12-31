@@ -150,6 +150,21 @@ public:
     // ############################################################################
     // API: Join
     // ############################################################################
+    template <Join JoinType, FixedString ...JoinNames, typename ...OtherColumns>
+    requires (sizeof...(JoinNames) > 0 &&
+        internal::are_names_unique<internal::NameList<JoinNames...>> &&
+        internal::are_names_in_columns<internal::NameList<JoinNames...>, Columns...> &&
+        internal::are_names_in_columns<internal::NameList<JoinNames...>, Columns...> &&
+        internal::are_names_unique<
+            internal::NameListMerge<
+                internal::NameListDifference<internal::GetColumnNames<Columns...>, internal::NameList<JoinNames...>>,
+                internal::NameListDifference<internal::GetColumnNames<OtherColumns...>, internal::NameList<JoinNames...>>
+            >
+        >
+    )
+    auto join (const DataFrame<OtherColumns...>& df) {
+        
+    }
 
     // ############################################################################
     // API: Summarize

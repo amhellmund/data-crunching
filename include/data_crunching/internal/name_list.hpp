@@ -41,6 +41,20 @@ template <FixedString NameToPrepend, typename NameList>
 using NameListPrepend = typename NameListPrependImpl<NameToPrepend, NameList>::type;
 
 // ############################################################################
+// Trait: Merge Name Lists
+// ############################################################################
+template <typename, typename>
+struct NameListMergeImpl {};
+
+template <FixedString ...Names1, FixedString ...Names2>
+struct NameListMergeImpl<NameList<Names1...>, NameList<Names2...>> {
+    using type = NameList<Names1..., Names2...>;
+};
+
+template <typename NameList1, typename NameList2>
+using NameListMerge = typename NameListMergeImpl<NameList1, NameList2>::type;
+
+// ############################################################################
 // Trait: Are Names Unique
 // ############################################################################
 template <FixedString, FixedString ...>
@@ -67,6 +81,40 @@ struct AreNamesUniqueImpl<NameList<FirstName, RestNames...>> {
 
 template <typename NameList>
 inline constexpr bool are_names_unique = (NameList::getSize() <= 1 || AreNamesUniqueImpl<NameList>::value);
+
+// ############################################################################
+// Trait: Name List Difference
+// ############################################################################
+template <FixedString, typename>
+struct IsNameInNameListImpl : std::false_type {};
+
+template <FixedString NameToSearch, FixedString FirstNameInList, FixedString ...RestNamesInList>
+struct IsNameInNameListImpl<NameToSearch, NameList<FirstNameInList, RestNamesInList...>> {
+    static constexpr bool value = areFixedStringsEqual(NameToSearch, FirstNameInList) || IsNameInNameListImpl<NameToSearch, NameList<RestNamesInList...>>::value;
+};
+
+template <FixedString NameToSearch, typename NameListToSearch>
+constexpr bool is_name_in_name_list = IsNameInNameListImpl<NameToSearch, NameListToSearch>::value;
+
+// ############################################################################
+// Trait: Name List Difference
+// ############################################################################
+template <typename, typename>
+struct NameListDifferenceImpl {
+    using type = NameList<>;
+};
+
+template <FixedString FirstNameToRemoveFrom, FixedString ...RestNamesToRemoveFrom, typename NamesToRemove>
+struct NameListDifferenceImpl<NameList<FirstNameToRemoveFrom, RestNamesToRemoveFrom...>, NamesToRemove> {
+    using type = std::conditional_t<
+        is_name_in_name_list<FirstNameToRemoveFrom, NamesToRemove>,
+        typename NameListDifferenceImpl<NameList<RestNamesToRemoveFrom...>, NamesToRemove>::type,
+        NameListPrepend<FirstNameToRemoveFrom, typename NameListDifferenceImpl<NameList<RestNamesToRemoveFrom...>, NamesToRemove>::type>
+    >;
+};
+
+template <typename NameListToRemoveFrom, typename NamesToRemove>
+using NameListDifference = typename NameListDifferenceImpl<NameListToRemoveFrom, NamesToRemove>::type;
 
 } // namespace dacr::internal
 

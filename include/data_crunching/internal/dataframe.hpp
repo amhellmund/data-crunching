@@ -30,6 +30,10 @@ template <internal::IsColumn ...Columns>
 requires internal::are_names_unique<internal::GetColumnNames<Columns...>>
 class DataFrame;
 
+enum class Join : int {
+    Inner = 0,
+};
+
 namespace internal {
 
 // ############################################################################

@@ -18,9 +18,7 @@
 
 #include "data_crunching/internal/name_list.hpp"
 
-using dacr::internal::NameList;
-using dacr::internal::NameListPrepend;
-using dacr::internal::are_names_unique;
+using namespace dacr::internal;
 
 TEST(NameList, Size) {
     EXPECT_EQ((NameList<>::getSize()), 0);
@@ -55,4 +53,45 @@ TEST(NameList, NamesAreUniqueFailure) {
     EXPECT_FALSE((are_names_unique<NameList<"first", "second", "first">>));
     EXPECT_FALSE((are_names_unique<NameList<"first", "second", "second">>));
     EXPECT_FALSE((are_names_unique<NameList<"first", "second", "third", "second">>));
+}
+
+TEST(NameList, NameListDifference) {
+    using NamesToRemoveFrom = NameList<"a", "b", "c">;
+
+    EXPECT_TRUE((std::is_same_v<
+        NameListDifference<NamesToRemoveFrom, NameList<"a">>,
+        NameList<"b", "c">
+    >));
+
+    EXPECT_TRUE((std::is_same_v<
+        NameListDifference<NamesToRemoveFrom, NameList<"a", "c">>,
+        NameList<"b">
+    >));
+
+    EXPECT_TRUE((std::is_same_v<
+        NameListDifference<NamesToRemoveFrom, NameList<"a", "c", "b">>,
+        NameList<>
+    >));
+}
+
+TEST(NameList, NameListMerge) {
+    EXPECT_TRUE((std::is_same_v<
+        NameListMerge<NameList<>, NameList<"a">>,
+        NameList<"a">
+    >));
+
+    EXPECT_TRUE((std::is_same_v<
+        NameListMerge<NameList<"a">, NameList<>>,
+        NameList<"a">
+    >));
+
+    EXPECT_TRUE((std::is_same_v<
+        NameListMerge<NameList<"a">, NameList<"b">>,
+        NameList<"a", "b">
+    >));
+
+    EXPECT_TRUE((std::is_same_v<
+        NameListMerge<NameList<"a", "c">, NameList<"b", "d">>,
+        NameList<"a", "c", "b", "d">
+    >));
 }
