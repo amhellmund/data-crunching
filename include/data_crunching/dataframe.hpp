@@ -186,7 +186,7 @@ public:
     // ############################################################################
     template <typename SelectNames = SelectAll>
     void print (const PrintOptions& print_options = PrintOptions{}, std::ostream& stream = std::cout) {
-
+        using SelectedNamesForApply = internal::GetSelectNameList<SelectNames, Columns...>;
     }
 
 private:
