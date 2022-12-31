@@ -188,7 +188,12 @@ TEST(DataFrame, Print) {
     DataFrame<
         Column<"id1", int>,
         Column<"id2", char>,
-        Column<"dbl", double>
+        Column<"dbl", double>,
+        Column<"str", std::string>,
+        Column<"bool", bool>
     > testdf1;
+    testdf1.insert(10, 'A', 20.0, "ABCDEFGHIHKL", true);
     testdf1.print<Select<"id1", "dbl">>(PrintOptions{}, std::cout);
+    testdf1.print(PrintOptions{}, std::cout);
+    EXPECT_TRUE(false);
 }

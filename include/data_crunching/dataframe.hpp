@@ -185,8 +185,19 @@ public:
     // API: Print
     // ############################################################################
     template <typename SelectNames = SelectAll>
+    requires (internal::is_valid_select<SelectNames, Columns...>)
     void print (const PrintOptions& print_options = PrintOptions{}, std::ostream& stream = std::cout) {
         using SelectedNamesForApply = internal::GetSelectNameList<SelectNames, Columns...>;
+        using SelectedColumnIndices = internal::GetColumnIndicesByNames<SelectedNamesForApply, Columns...>;
+        using SelectedColumnTypes = internal::GetColumnTypesByNames<SelectedNamesForApply, Columns...>;
+
+        using ColumnPrinter = internal::ConstructColumnPrinter<SelectedNamesForApply, SelectedColumnTypes, SelectedColumnIndices>;
+        
+        ColumnPrinter column_printer{stream, print_options};
+        column_printer.printHeader();
+        for (auto i = 0LU; i < getSize(); ++i) {
+            column_printer.printData(column_store_data_, i);
+        }
     }
 
 private:
