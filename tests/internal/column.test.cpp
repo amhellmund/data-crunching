@@ -20,6 +20,7 @@
 using dacr::Column;
 using dacr::Select;
 using dacr::SelectAll;
+using dacr::TypeList;
 
 using namespace dacr::internal;
 
@@ -95,6 +96,16 @@ TEST(Column, GetColumnIndicesByNames) {
             Column<"first", double>, Column<"test", int>, Column<"second", float>, Column<"test1", char>
         >,
         std::integer_sequence<std::size_t, 1, 3>
+    >));
+}
+
+TEST(Column, GetColumnTypesByNames) {
+    EXPECT_TRUE((std::is_same_v<
+        GetColumnTypesByNames<
+            NameList<"first", "second">,
+            Column<"int", int>, Column<"first", char>, Column<"dbl", double>, Column<"second", float>
+        >,
+        TypeList<char, float>
     >));
 }
 

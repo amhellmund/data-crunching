@@ -17,6 +17,7 @@
 
 #include <tuple>
 
+#include "data_crunching/namedtuple.hpp"
 #include "data_crunching/internal/column.hpp"
 #include "data_crunching/internal/name_list.hpp"
 #include "data_crunching/internal/fixed_string.hpp"
@@ -103,7 +104,21 @@ struct DataFramePrependImpl<TypeToPrepend, DataFrame<TypesInDataFrame...>> {
 };
 
 template <typename TypeToPrepend, typename DataFrameType>
-using DataFramePrepend = typename DataFramePrependImpl<TypeToPrepend, DataFrameType>::type; 
+using DataFramePrepend = typename DataFramePrependImpl<TypeToPrepend, DataFrameType>::type;
+
+// ############################################################################
+// Trait: Append DataFrame
+// ############################################################################
+template <typename ...>
+struct DataFrameAppendImpl {};
+
+template <typename TypeToAppend, typename ...TypesInDataFrame>
+struct DataFrameAppendImpl<TypeToAppend, DataFrame<TypesInDataFrame...>> {
+    using type = DataFrame<TypesInDataFrame..., TypeToAppend>;
+};
+
+template <typename TypeToAppend, typename DataFrameType>
+using DataFrameAppend = typename DataFrameAppendImpl<TypeToAppend, DataFrameType>::type; 
 
 // ############################################################################
 // Trait: Get DataFrame With Columns By Names
@@ -124,6 +139,41 @@ struct GetDataFrameWithColumnsByNameImpl<NameList<FirstNameToSelect, RestNamesTo
 template <typename Names, typename ...Columns>
 using GetDataFrameWithColumnsByName = typename GetDataFrameWithColumnsByNameImpl<Names, Columns...>::type;
 
+// ############################################################################
+// Trait: Construct Named Tuple
+// ############################################################################
+template<typename, typename>
+struct ConstructNamedTupleImpl {};
+
+template <FixedString ...Names, typename ...Types>
+struct ConstructNamedTupleImpl<NameList<Names...>, TypeList<Types...>> {
+    using type = NamedTuple<Field<Names,Types>...>;
+};
+
+template <typename Names, typename Types>
+using ConstructNamedTuple = typename ConstructNamedTupleImpl<Names, Types>::type;
+
+// ############################################################################
+// Trait: Construct DataFrame For Apply
+// ############################################################################
+template <typename, typename ...>
+struct ConstructDataFrameForApplyImpl {
+    using type = DataFrame<>;
+};
+
+template <FixedString FirstNameToSearch, FixedString ...RestNamesToSearch, typename ...Columns>
+struct ConstructDataFrameForApplyImpl<NameList<FirstNameToSearch, RestNamesToSearch...>, Columns...> {
+    using type = DataFramePrepend<
+        GetColumnByName<FirstNameToSearch, Columns...>,
+        typename ConstructDataFrameForApplyImpl<NameList<RestNamesToSearch...>, Columns...>::type
+    >;
+};
+
+template <typename SelectNames, FixedString NewColName, typename NewColType, typename ...Columns>
+using ConstructDataFrameForApply = DataFrameAppend<
+    Column<NewColName, NewColType>,
+    typename ConstructDataFrameForApplyImpl<SelectNames, Columns...>::type
+>; 
 
 } // namespace internal
 

@@ -22,10 +22,7 @@
 #include "data_crunching/internal/dataframe.hpp"
 #include "data_crunching/internal/type_list.hpp"
 
-using dacr::Column;
-using dacr::DataFrame;
-using dacr::TypeList;
-
+using namespace dacr;
 using namespace dacr::internal;
 
 template <typename T>
@@ -84,6 +81,18 @@ TEST(DataFrameInternal, PrependDataFrame) {
     >));
 }
 
+TEST(DataFrameInternal, AppendDataFrame) {
+    EXPECT_TRUE((std::is_same_v<
+        DataFrameAppend<Column<"first", int>, DataFrame<>>,
+        DataFrame<Column<"first", int>>
+    >));
+
+    EXPECT_TRUE((std::is_same_v<
+        DataFrameAppend<Column<"first", int>, DataFrame<Column<"second", double>>>,
+        DataFrame<Column<"second", double>, Column<"first", int>>
+    >));
+}
+
 TEST(DataFrameInternal, GetDataFrameWithColumnsByName) {
     EXPECT_TRUE((std::is_same_v<
         GetDataFrameWithColumnsByName<
@@ -91,5 +100,25 @@ TEST(DataFrameInternal, GetDataFrameWithColumnsByName) {
             Column<"first", int>, Column<"second", double>, Column<"third", float>
         >,
         DataFrame<Column<"second", double>>
+    >));
+}
+
+TEST(DataFrameInternal, ConstructNamedTuple) {
+    EXPECT_TRUE((std::is_same_v<
+        ConstructNamedTuple<
+            NameList<"first", "second">,
+            TypeList<int, double>
+        >,
+        NamedTuple<
+            Field<"first", int>,
+            Field<"second", double>
+        >
+    >));   
+}
+
+TEST(DataFrameInternal, ConstructDataFrameForApply) {
+    EXPECT_TRUE((std::is_same_v<
+        ConstructDataFrameForApply<NameList<"first">, "newcol", double, Column<"first", int>>,
+        DataFrame<Column<"first", int>, Column<"newcol", double>>
     >));
 }

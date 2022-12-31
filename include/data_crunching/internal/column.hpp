@@ -134,6 +134,43 @@ template <typename Names, typename ...Columns>
 using GetColumnIndicesByNames = typename GetColumnIndicesByNamesImpl<Names, Columns...>::type;
 
 // ############################################################################
+// Trait: Get Column Type/Types By Name
+// ############################################################################
+template <FixedString, typename ...>
+struct GetColumnTypeByNameImpl {
+    using type = void;
+};
+
+template <FixedString NameToSearch, FixedString FirstColName, typename FirstColType, typename ...RestColumns>
+struct GetColumnTypeByNameImpl<NameToSearch, Column<FirstColName, FirstColType>, RestColumns...>
+{
+    using type = std::conditional_t<
+        areFixedStringsEqual(NameToSearch, FirstColName),
+        FirstColType,
+        typename GetColumnTypeByNameImpl<NameToSearch, RestColumns...>::type
+    >;
+};
+
+template <FixedString NameToSearch, typename ...Columns>
+using GetColumnTypeByName = typename GetColumnTypeByNameImpl<NameToSearch, Columns...>::type;
+
+template <typename ...>
+struct GetColumnTypesByNamesImpl {
+    using type = TypeList<>;
+};
+
+template <FixedString FirstNameToSearch, FixedString ...RestNamesToSearch, typename ...Columns>
+struct GetColumnTypesByNamesImpl<NameList<FirstNameToSearch, RestNamesToSearch...>, Columns...> {
+    using type = TypeListPrepend<
+        GetColumnTypeByName<FirstNameToSearch, Columns...>,
+        typename GetColumnTypesByNamesImpl<NameList<RestNamesToSearch...>, Columns...>::type
+    >;
+};
+
+template <typename Names, typename ...Columns>
+using GetColumnTypesByNames = typename GetColumnTypesByNamesImpl<Names, Columns...>::type;
+
+// ############################################################################
 // Trait: Get Column By Name
 // ############################################################################
 template <FixedString, typename ...>

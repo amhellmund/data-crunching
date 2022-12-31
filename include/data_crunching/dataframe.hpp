@@ -35,7 +35,6 @@ public:
 
     DataFrame() = default;
 
-
     // ############################################################################
     // API: Get Size
     // ############################################################################
@@ -113,13 +112,23 @@ public:
     // ############################################################################
     // API: Apply
     // ############################################################################
-    template <FixedString NewColumnName, typename Fun, typename SelectNames = SelectAll>
+    template <FixedString NewColumnName, typename SelectNames = SelectAll, typename Func>
     requires (
         NewColumnName.getLength() > 0 &&
         internal::is_valid_select<SelectNames, Columns...>
     )
-    auto apply (Fun&& fun) {
-        using SelectNamesForApply = internal::GetSelectNameList<SelectNames, Columns...>;
+    auto apply (Func&& function) {
+        using SelectedNamesForApply = internal::GetSelectNameList<SelectNames, Columns...>;
+        using SelectedColumnIndices = internal::GetColumnIndicesByNames<SelectedNamesForApply, Columns...>;
+        using SelectedTypesForFunc = internal::GetColumnTypesByNames<SelectedNamesForApply, Columns...>;
+        using NamedTupleForFuncArgs = internal::ConstructNamedTuple<SelectedNamesForApply, SelectedTypesForFunc>;
+        using FuncReturnType = std::invoke_result_t<Func, NamedTupleForFuncArgs>;
+        using NewDataFrame = internal::ConstructDataFrameForApply<SelectedNamesForApply, NewColumnName, FuncReturnType, Columns...>;
+        
+        return applyImpl<NewDataFrame, NamedTupleForFuncArgs, SelectedNamesForApply::getSize()>(
+            std::forward<Func>(function),
+            SelectedColumnIndices{}
+        ); 
     }
 
     // ############################################################################
@@ -170,8 +179,26 @@ private:
         internal::insertRangesIntoContainers(column_store_data_, IndicesForColumnStore{}, df.getSize(), std::get<Indices>(df.column_store_data_)...);
     }
 
+    template <typename NewDataFrame, typename NamedTupleForFunc, std::size_t NumSelectedNames, typename Func, std::size_t ...Indices>
+    auto applyImpl (Func&& function, std::integer_sequence<std::size_t, Indices...>) {
+        NewDataFrame result;
+        result.template assureSufficientCapacityInColumnStore(getSize(), typename NewDataFrame::IndicesForColumnStore{});
+        internal::insertRangesIntoContainers(result.column_store_data_, std::make_index_sequence<NumSelectedNames>{}, getSize(), std::get<Indices>(column_store_data_)...);
+        
+        auto& result_column = std::get<NumSelectedNames>(result.column_store_data_);
+        for (int i = 0LU; i < getSize(); ++i) {
+            result_column.push_back(
+                std::forward<Func>(function)(NamedTupleForFunc{std::get<Indices>(column_store_data_)[i]...})
+            );
+        }
+        return result;
+    }
+
     ColumnStoreDataType column_store_data_{};
 };
+
+#define dacr_param auto data
+#define dacr_value(field_name) data.template get<field_name>()
 
 } // namespace dacr
 

@@ -21,6 +21,8 @@
 
 using dacr::Column;
 using dacr::DataFrame;
+using dacr::Select;
+using dacr::SelectAll;
 
 TEST(DataFrame, ValidDataFrameDefinition) {
     EXPECT_NO_THROW((DataFrame<>()));
@@ -89,4 +91,40 @@ TEST(DataFrame, Select) {
     >));
     EXPECT_THAT(newdf.getColumn<"int">(), ::testing::ElementsAre(10, 100));
     EXPECT_THAT(newdf.getColumn<"chr">(), ::testing::ElementsAre('A', 'B'));
+}
+
+TEST(DataFrame, Apply) {
+    DataFrame<
+        Column<"int", int>,
+        Column<"dbl", double>,
+        Column<"chr", char>
+    > testdf;
+    testdf.insert(10, 20.0, 'A');
+    testdf.insert(100, 200.0, 'B');
+
+    auto testdfwithselect = testdf.apply<"flt", Select<"dbl">>([](dacr_param) {
+        return static_cast<float>(dacr_value("dbl") * 2.0);
+    });
+
+    EXPECT_TRUE((std::is_same_v<
+        decltype(testdfwithselect),
+        DataFrame<Column<"dbl", double>, Column<"flt", float>>
+    >));
+
+    EXPECT_THAT(testdfwithselect.getColumn<"dbl">(), ::testing::ElementsAre(20.0, 200.0));
+    EXPECT_THAT(testdfwithselect.getColumn<"flt">(), ::testing::ElementsAre(40.0, 400.0));
+
+    auto testdfallselect = testdf.apply<"flt">([](dacr_param) {
+        return static_cast<float>(dacr_value("dbl") * 2.0);
+    });
+
+    EXPECT_TRUE((std::is_same_v<
+        decltype(testdfallselect),
+        DataFrame<Column<"int", int>, Column<"dbl", double>, Column<"chr", char>, Column<"flt", float>>
+    >));
+
+    EXPECT_THAT(testdfallselect.getColumn<"int">(), ::testing::ElementsAre(10, 100));
+    EXPECT_THAT(testdfallselect.getColumn<"dbl">(), ::testing::ElementsAre(20.0, 200.0));
+    EXPECT_THAT(testdfallselect.getColumn<"chr">(), ::testing::ElementsAre('A', 'B'));
+    EXPECT_THAT(testdfallselect.getColumn<"flt">(), ::testing::ElementsAre(40.0, 400.0));
 }
