@@ -137,7 +137,14 @@ public:
     template <typename SelectNames = SelectAll, typename Func>
     requires (internal::is_valid_select<SelectNames, Columns...>)
     auto query (Func&& function) {
-        return DataFrame{};
+        using SelectedNamesForApply = internal::GetSelectNameList<SelectNames, Columns...>;
+        using SelectedColumnIndices = internal::GetColumnIndicesByNames<SelectedNamesForApply, Columns...>;
+        using SelectedTypesForFunc = internal::GetColumnTypesByNames<SelectedNamesForApply, Columns...>;
+        using NamedTupleForFuncArgs = internal::ConstructNamedTuple<SelectedNamesForApply, SelectedTypesForFunc>;
+        using FuncReturnType = std::invoke_result_t<Func, NamedTupleForFuncArgs>;
+        static_assert(std::is_same_v<FuncReturnType, bool>, "Callback return type for query() must be bool");
+
+        return queryImpl<NamedTupleForFuncArgs>(std::forward<Func>(function), SelectedColumnIndices{}, IndicesForColumnStore{});
     }
 
     // ############################################################################
@@ -195,6 +202,19 @@ private:
             result_column.push_back(
                 std::forward<Func>(function)(NamedTupleForFunc{std::get<Indices>(column_store_data_)[i]...})
             );
+        }
+        return result;
+    }
+
+    template <typename NamedTupleForFunc, typename Func, std::size_t ...IndicesForFunc, std::size_t ...IndicesForCopy>
+    auto queryImpl (Func&& function, std::integer_sequence<std::size_t, IndicesForFunc...>, std::integer_sequence<std::size_t, IndicesForCopy...>) {
+        DataFrame result;
+        for (int i = 0LU; i < getSize(); ++i) {
+            bool keep_row = std::forward<Func>(function)(NamedTupleForFunc{std::get<IndicesForFunc>(column_store_data_)[i]...});
+            if (keep_row) {
+                ((std::get<IndicesForCopy>(result.column_store_data_).push_back(
+                    std::get<IndicesForCopy>(column_store_data_)[i])),...);
+            }
         }
         return result;
     }

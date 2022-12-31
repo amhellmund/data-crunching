@@ -141,8 +141,16 @@ TEST(DataFrame, Query) {
     auto testdfwithselect = testdf.query<Select<"dbl">>([](dacr_param) {
         return dacr_value("dbl") > 100.0;
     });
+    EXPECT_TRUE((std::is_same_v<decltype(testdf), decltype(testdfwithselect)>));
+    EXPECT_THAT(testdfwithselect.getColumn<"int">(), ::testing::ElementsAre(100));
+    EXPECT_THAT(testdfwithselect.getColumn<"dbl">(), ::testing::ElementsAre(200.0));
+    EXPECT_THAT(testdfwithselect.getColumn<"chr">(), ::testing::ElementsAre('B'));
 
     auto testdfallselect = testdf.query([](dacr_param) {
         return dacr_value("dbl") > 100.0;
     });
+    EXPECT_TRUE((std::is_same_v<decltype(testdf), decltype(testdfallselect)>));
+    EXPECT_THAT(testdfallselect.getColumn<"int">(), ::testing::ElementsAre(100));
+    EXPECT_THAT(testdfallselect.getColumn<"dbl">(), ::testing::ElementsAre(200.0));
+    EXPECT_THAT(testdfallselect.getColumn<"chr">(), ::testing::ElementsAre('B'));
 }
