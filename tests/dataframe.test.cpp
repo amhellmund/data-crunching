@@ -128,3 +128,21 @@ TEST(DataFrame, Apply) {
     EXPECT_THAT(testdfallselect.getColumn<"chr">(), ::testing::ElementsAre('A', 'B'));
     EXPECT_THAT(testdfallselect.getColumn<"flt">(), ::testing::ElementsAre(40.0, 400.0));
 }
+
+TEST(DataFrame, Query) {
+    DataFrame<
+        Column<"int", int>,
+        Column<"dbl", double>,
+        Column<"chr", char>
+    > testdf;
+    testdf.insert(10, 20.0, 'A');
+    testdf.insert(100, 200.0, 'B');
+
+    auto testdfwithselect = testdf.query<Select<"dbl">>([](dacr_param) {
+        return dacr_value("dbl") > 100.0;
+    });
+
+    auto testdfallselect = testdf.query([](dacr_param) {
+        return dacr_value("dbl") > 100.0;
+    });
+}

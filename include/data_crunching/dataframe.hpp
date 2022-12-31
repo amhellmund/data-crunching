@@ -134,6 +134,11 @@ public:
     // ############################################################################
     // API: Query
     // ############################################################################
+    template <typename SelectNames = SelectAll, typename Func>
+    requires (internal::is_valid_select<SelectNames, Columns...>)
+    auto query (Func&& function) {
+        return DataFrame{};
+    }
 
     // ############################################################################
     // API: Join
