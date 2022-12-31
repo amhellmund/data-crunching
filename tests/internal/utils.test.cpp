@@ -77,3 +77,20 @@ TEST(IntegerSequence, IntegerSequencePrepend) {
         std::integer_sequence<std::size_t, 0>
     >));   
 }
+
+TEST(IntegerSequence, IntegerSequenceByRange) {
+    EXPECT_TRUE((std::is_same_v<
+        IntegerSequenceByRange<0, 0>,
+        std::integer_sequence<std::size_t>
+    >));
+
+    EXPECT_TRUE((std::is_same_v<
+        IntegerSequenceByRange<0, 1>,
+        std::integer_sequence<std::size_t, 0>
+    >)); 
+
+    EXPECT_TRUE((std::is_same_v<
+        IntegerSequenceByRange<4, 6>,
+        std::integer_sequence<std::size_t, 4, 5>
+    >));  
+}

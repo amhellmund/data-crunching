@@ -163,7 +163,16 @@ public:
         >
     )
     auto join (const DataFrame<OtherColumns...>& df) {
+        // compute all the indices
+        using JoinIndicesSelf = internal::GetColumnIndicesByNames<internal::NameList<JoinNames...>, Columns...>;
+        using JoinIndicesOther = internal::GetColumnIndicesByNames<internal::NameList<JoinNames...>, OtherColumns...>;
+        using ColumnNamesToCopyOther = internal::NameListDifference<internal::GetColumnNames<OtherColumns...>, internal::NameList<JoinNames...>>;
+        using DataIndicesToCopyOther = internal::GetColumnIndicesByNames<ColumnNamesToCopyOther, OtherColumns...>;
+
+        using DataIndicesInResultOther = internal::IntegerSequenceByRange<sizeof...(Columns), sizeof...(Columns) + sizeof...(OtherColumns) - sizeof...(JoinNames)>;
+        using JoinedDataFrame = internal::DataFrameMerge<DataFrame, internal::GetDataFrameWithColumnsByName<ColumnNamesToCopyOther, OtherColumns...>>;
         
+        return joinImpl<JoinType, JoinedDataFrame, JoinIndicesSelf, JoinIndicesOther, DataIndicesInResultOther, DataIndicesToCopyOther>(df);
     }
 
     // ############################################################################
@@ -232,6 +241,33 @@ private:
             }
         }
         return result;
+    }
+
+    template <Join JoinType, typename NewDataFrame, typename JoinIndicesSelf, typename JoinIndicesOther, typename DataIndicesInResultOther, typename DataIndicesToCopyOther, typename DataFrameOther>
+    auto joinImpl(const DataFrameOther& df) {
+        NewDataFrame result{};
+        if constexpr (JoinType == Join::Inner) {
+            for (auto i = 0LU; i < getSize(); ++i) {
+                for (auto j = 0LU; j < df.getSize(); ++j) {
+                    if (compareJoinIndices(df, i, j, JoinIndicesSelf{}, JoinIndicesOther{})) {
+                        addJoinedColumnData(result.column_store_data_, df, i, j, IndicesForColumnStore{}, DataIndicesInResultOther{}, DataIndicesToCopyOther{});
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
+    template <typename DataFrameOther, std::size_t ...JoinIndicesSelf, std::size_t ...JoinIndicesOther>
+    requires (sizeof...(JoinIndicesSelf) == sizeof...(JoinIndicesOther))
+    bool compareJoinIndices (const DataFrameOther& df, std::size_t row_index_self, std::size_t row_index_other, std::integer_sequence<std::size_t, JoinIndicesSelf...>, std::integer_sequence<std::size_t, JoinIndicesOther...>) {
+        return ((std::get<JoinIndicesSelf>(column_store_data_)[row_index_self] == std::get<JoinIndicesOther>(df.column_store_data_)[row_index_other]) && ...);
+    }
+
+    template <typename JoinedColumnStoreData, typename DataFrameOther, std::size_t ...ColumnIndicesSelf, std::size_t ...DataIndicesInResultOther, std::size_t ...DataIndicesToCopyOther>
+    void addJoinedColumnData (JoinedColumnStoreData& joined_data, const DataFrameOther& df, std::size_t row_index_self, std::size_t row_index_other, std::integer_sequence<std::size_t, ColumnIndicesSelf...>, std::integer_sequence<std::size_t, DataIndicesInResultOther...>, std::integer_sequence<std::size_t, DataIndicesToCopyOther...>) {
+        ((std::get<ColumnIndicesSelf>(joined_data).push_back(std::get<ColumnIndicesSelf>(column_store_data_)[row_index_self])), ...);
+        ((std::get<DataIndicesInResultOther>(joined_data).push_back(std::get<DataIndicesToCopyOther>(df.column_store_data_)[row_index_other])), ...);
     }
 
     ColumnStoreDataType column_store_data_{};

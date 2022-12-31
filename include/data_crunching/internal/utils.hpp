@@ -51,6 +51,23 @@ template <std::size_t NumberToPrepend, typename Sequence>
 using IntegerSequencePrepend = typename IntegerSequencePrependImpl<NumberToPrepend, Sequence>::type;
 
 // ############################################################################
+// Trait: Integer Sequence By Range
+// ############################################################################
+template <std::size_t LoopIndex, std::size_t EndExclusive>
+struct IntegerSequenceByRangeImpl {
+    using type = IntegerSequencePrepend<LoopIndex, typename IntegerSequenceByRangeImpl<LoopIndex + 1, EndExclusive>::type>;
+};
+
+template <std::size_t EndCondition>
+struct IntegerSequenceByRangeImpl<EndCondition, EndCondition> {
+    using type = std::integer_sequence<std::size_t>;
+};
+
+template <std::size_t Start, std::size_t EndExclusive>
+requires (Start <= EndExclusive)
+using IntegerSequenceByRange = typename IntegerSequenceByRangeImpl<Start, EndExclusive>::type;
+
+// ############################################################################
 // Trait: Is Convertible To Types
 // ############################################################################
 template <typename ...>

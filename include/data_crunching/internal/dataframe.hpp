@@ -111,6 +111,20 @@ template <typename TypeToPrepend, typename DataFrameType>
 using DataFramePrepend = typename DataFramePrependImpl<TypeToPrepend, DataFrameType>::type;
 
 // ############################################################################
+// Trait: Merge DataFrame
+// ############################################################################
+template <typename ...>
+struct DataFrameMergeImpl {};
+
+template <typename ...TypesInDataFrame1, typename ...TypesInDataFrame2>
+struct DataFrameMergeImpl<DataFrame<TypesInDataFrame1...>, DataFrame<TypesInDataFrame2...>> {
+    using type = DataFrame<TypesInDataFrame1..., TypesInDataFrame2...>;
+};
+
+template <typename DataFrame1, typename DataFrame2>
+using DataFrameMerge = typename DataFrameMergeImpl<DataFrame1, DataFrame2>::type;
+
+// ############################################################################
 // Trait: Append DataFrame
 // ############################################################################
 template <typename ...>

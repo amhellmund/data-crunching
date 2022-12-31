@@ -81,6 +81,18 @@ TEST(DataFrameInternal, PrependDataFrame) {
     >));
 }
 
+TEST(DataFrameInternal, DataFrameMerge) {
+    EXPECT_TRUE((std::is_same_v<
+        DataFrameMerge<DataFrame<Column<"first", int>>, DataFrame<>>,
+        DataFrame<Column<"first", int>>
+    >));
+
+    EXPECT_TRUE((std::is_same_v<
+        DataFrameMerge<DataFrame<Column<"first", int>>, DataFrame<Column<"second", double>>>,
+        DataFrame<Column<"first", int>, Column<"second", double>>
+    >));
+}
+
 TEST(DataFrameInternal, AppendDataFrame) {
     EXPECT_TRUE((std::is_same_v<
         DataFrameAppend<Column<"first", int>, DataFrame<>>,

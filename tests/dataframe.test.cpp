@@ -167,10 +167,18 @@ TEST(DataFrame, JoinWithType) {
     DataFrame<
         Column<"id1", int>,
         Column<"id2", char>,
-        Column<"float", float>
+        Column<"flt", float>
     > testdf2;
     testdf2.insert(10, 'A', 50.0f);
 
-    testdf1.join<Join::Inner, "id1", "id2">(testdf2);
+    auto dfjoined = testdf1.join<Join::Inner, "id1", "id2">(testdf2);
     
+    EXPECT_TRUE((std::is_same_v<
+        decltype(dfjoined),
+        DataFrame<Column<"id1", int>, Column<"id2", char>, Column<"dbl", double>, Column<"flt", float>>
+    >));
+    EXPECT_THAT(dfjoined.getColumn<"id1">(), ::testing::ElementsAre(10));
+    EXPECT_THAT(dfjoined.getColumn<"id2">(), ::testing::ElementsAre('A'));
+    EXPECT_THAT(dfjoined.getColumn<"dbl">(), ::testing::ElementsAre(100.0));
+    EXPECT_THAT(dfjoined.getColumn<"flt">(), ::testing::ElementsAre(50.0f));
 }
