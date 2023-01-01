@@ -15,7 +15,9 @@
 #ifndef DATA_CRUNCHING_INTERNAL_DATAFRAME_PRINT_HPP
 #define DATA_CRUNCHING_INTERNAL_DATAFRAME_PRINT_HPP
 
+#include <concepts>
 #include <iomanip>
+#include <limits>
 #include <sstream>
 #include <string>
 
@@ -25,20 +27,21 @@ namespace dacr {
 
 struct PrintOptions {
     /* column widths for arithmetic data types */
-    int integer_width {10};
-    int long_width {10};
-    int fixedpoint_width{8};
-    int fixedpoint_precision{2};
+    std::size_t fixedpoint_width{8};
+    std::size_t fixedpoint_precision{2};
     /* column width for string types */
-    int string_width {10};
+    std::size_t string_width {10};
     /* column width for custom data types */
-    int custom_width {10};
-    /* maximum number of rows to display */
-    int max_rows{100};
+    std::size_t custom_width {10};
+    /* maximum number of rows to display. Default: all */
+    std::size_t max_rows{std::numeric_limits<std::size_t>::max()};
 };
 
 namespace internal {
 
+// ############################################################################
+// Trait: Data Formatter
+// ############################################################################
 template <typename T>
 struct DataFormatter {
     static void format(std::ostream& stream, const T& value, const PrintOptions&) {
@@ -50,72 +53,58 @@ struct DataFormatter {
     }
 };
 
+template <typename T>
+requires (std::is_integral_v<T>)
+struct DataFormatter<T> {
+    static void format(std::ostream& stream, const T& value, const PrintOptions&) {
+        stream << value;
+    }
+
+    static int getWidth (const PrintOptions&) {
+        return std::numeric_limits<T>::digits10 + 2;
+    }
+};
+
+template <typename T>
+requires (std::is_floating_point_v<T>)
+struct DataFormatter<T> {
+    static void format(std::ostream& stream, const T& value, const PrintOptions& print_options) {
+        stream << std::left << std::setw(print_options.fixedpoint_width) << std::setprecision(print_options.fixedpoint_precision) << value;
+    }
+
+    static int getWidth (const PrintOptions& print_options) {
+        return print_options.fixedpoint_width + 1;
+    }
+};
+
 template <>
 struct DataFormatter<bool> {
+    static constexpr int MAX_WIDTH_BOOL = 5;
+
     static void format(std::ostream& stream, bool value, const PrintOptions&) {
         stream << std::boolalpha << value;
     }
 
-    static int getWidth (const PrintOptions& print_options) {
-        return 5;
+    static int getWidth (const PrintOptions&) {
+        return MAX_WIDTH_BOOL;
     }
 };
 
 template <>
-struct DataFormatter<char> {
-    static void format(std::ostream& stream, char value, const PrintOptions&) {
+struct DataFormatter<std::string> {
+    static void format(std::ostream& stream, const std::string& value, const PrintOptions&) {
         stream << value;
     }
 
     static int getWidth (const PrintOptions& print_options) {
-        return 6;
+        return print_options.string_width;
     }
 };
 
-template <>
-struct DataFormatter<short> {
-    static void format(std::ostream& stream, short value, const PrintOptions&) {
-        stream << value;
-    }
 
-    static int getWidth (const PrintOptions& print_options) {
-        return 6;
-    }
-};
-
-template <>
-struct DataFormatter<int> {
-    static void format(std::ostream& stream, int value, const PrintOptions&) {
-        stream << value;
-    }
-
-    static int getWidth (const PrintOptions& print_options) {
-        return 10;
-    }
-};
-
-template <>
-struct DataFormatter<double> {
-    static void format(std::ostream& stream, double value, const PrintOptions& print_options) {
-        stream << std::left << std::setw(print_options.fixedpoint_width) << std::setprecision(print_options.fixedpoint_precision) << value;
-    }
-
-    static int getWidth (const PrintOptions& print_options) {
-        return print_options.fixedpoint_width;
-    }
-};
-
-template <>
-struct DataFormatter<float> {
-    static void format(std::ostream& stream, float value, const PrintOptions& print_options) {
-        stream << std::left << std::setw(print_options.fixedpoint_width) << std::setprecision(print_options.fixedpoint_precision) << value;
-    }
-
-    static int getWidth (const PrintOptions& print_options) {
-        return print_options.fixedpoint_width;
-    }
-};
-
+// ############################################################################
+// Trait: Printer
+// ############################################################################
 template <FixedString ColumnName, typename ColumnType, std::size_t DataIndex>
 class ColumnPrinter {
 public:
@@ -123,7 +112,7 @@ public:
         printString(stream, ColumnName.data, getWidth(print_options));
     }
 
-    static void printHeaderSeparator(std::ostream& stream, const PrintOptions& print_options) {
+    static void printLineSeparator(std::ostream& stream, const PrintOptions& print_options) {
         stream << std::string(getWidth(print_options), '-');
     }
 
@@ -135,19 +124,21 @@ public:
     }
 
     static int getWidth(const PrintOptions& printOptions) {
-        return DataFormatter<ColumnType>::getWidth(printOptions);
+        return std::max<int>(DataFormatter<ColumnType>::getWidth(printOptions), MIN_COLUMN_WIDTH);
     }
 
 private:
+    static constexpr std::size_t MIN_COLUMN_WIDTH = 3;
+
     static void printString(std::ostream& stream, std::string_view str, int width) {
         if (str.size() <= width) {
             stream << str << std::string(width - str.size(), ' '); 
         }
-        else if (width > 3) {
-            stream << str.substr(0, width - 3) << std::string(3, '.');
+        else if (width > MIN_COLUMN_WIDTH) {
+            stream << str.substr(0, width - 2) << std::string(2, '.');
         }
         else {
-            stream << str.substr(0, 3);
+            stream << str.substr(0, MIN_COLUMN_WIDTH);
         }
     }
 };
@@ -158,17 +149,13 @@ public:
         stream << "| ";
     }
 
-    static void printHeaderSeparator(std::ostream& stream, const PrintOptions&) {
+    static void printLineSeparator(std::ostream& stream, const PrintOptions&) {
         stream << "|-";
     }
 
     template <typename ColumnStoreData>
     static void printData(std::ostream& stream, const PrintOptions&, const ColumnStoreData&, std::size_t) {
         stream << "| ";
-    }
-
-    static int getWidth(const PrintOptions&) {
-        return 2;
     }
 };
 
@@ -178,17 +165,13 @@ public:
         stream << " |\n";
     }
 
-    static void printHeaderSeparator(std::ostream& stream, const PrintOptions&) {
+    static void printLineSeparator(std::ostream& stream, const PrintOptions&) {
         stream << "-|\n";
     }
 
     template <typename ColumnStoreData>
     static void printData(std::ostream& stream, const PrintOptions&, const ColumnStoreData&, std::size_t) {
         stream << " |\n";
-    }
-
-    static int getWidth(const PrintOptions&) {
-        return 2;
     }
 };
 
@@ -198,7 +181,7 @@ public:
         stream << " | ";
     }
 
-    static void printHeaderSeparator(std::ostream& stream, const PrintOptions&) {
+    static void printLineSeparator(std::ostream& stream, const PrintOptions&) {
         stream << "---";
     }
 
@@ -206,32 +189,48 @@ public:
     static void printData(std::ostream& stream, const PrintOptions&, const ColumnStoreData&, std::size_t) {
         stream << " | ";
     }
-
-    static int getWidth(const PrintOptions&) {
-        return 3;
-    }
 };
 
+// ############################################################################
+// Trait: PrintExecuter
+// ############################################################################
 template <typename ...Printer>
-struct PrintExecuter {
+class PrintExecuter {
+public:
     PrintExecuter(std::ostream& stream, const PrintOptions& print_options) : stream_{stream}, print_options_{print_options} {
     }
 
+    template <typename ColumnStoreData>
+    void print(const ColumnStoreData& column_store_data) {
+        printHeader();
+        auto size = std::get<0>(column_store_data).size();
+        printData(column_store_data, size);
+    }
+
+private:
     void printHeader() {
-        stream_ << __PRETTY_FUNCTION__ << "\n";
+        ((Printer::printLineSeparator(stream_, print_options_)), ...);
         ((Printer::printHeader(stream_, print_options_)), ...);
-        ((Printer::printHeaderSeparator(stream_, print_options_)), ...);
+        ((Printer::printLineSeparator(stream_, print_options_)), ...);
     }
 
     template <typename ColumnStoreData>
-    void printData(const ColumnStoreData& column_store_data, std::size_t row_index) {
-        ((Printer::printData(stream_, print_options_, column_store_data, row_index)), ...);
+    void printData(const ColumnStoreData& column_store_data, std::size_t size) {
+        std::size_t rows_to_display = std::min(size, print_options_.max_rows);
+        for (auto row_index = 0LU; row_index < rows_to_display; ++row_index) {
+            ((Printer::printData(stream_, print_options_, column_store_data, row_index)), ...);
+        }
+        ((Printer::printLineSeparator(stream_, print_options_)), ...);
+        stream_ << "Rows in DataFrame: " << size << "\n";
     }
 
     std::ostream& stream_;
     const PrintOptions& print_options_;
 };
 
+// ############################################################################
+// Trait: Merge Print Executer
+// ############################################################################
 template <typename, typename>
 struct PrintExecuterMergeImpl {};
 
@@ -243,26 +242,29 @@ struct PrintExecuterMergeImpl<PrintExecuter<Printers1...>, PrintExecuter<Printer
 template <typename Printer1, typename Printer2>
 using PrintExecuterMerge = typename PrintExecuterMergeImpl<Printer1, Printer2>::type;
 
+// ############################################################################
+// Trait: Construct Print Executer
+// ############################################################################
 template <typename, typename, typename>
-struct ConstructColumnPrinterImpl {};
+struct ConstructPrintExecuterImpl {};
 
 template <FixedString ColName, typename ColType, std::size_t ColIndex>
-struct ConstructColumnPrinterImpl<NameList<ColName>, TypeList<ColType>, std::integer_sequence<std::size_t, ColIndex>> {
+struct ConstructPrintExecuterImpl<NameList<ColName>, TypeList<ColType>, std::integer_sequence<std::size_t, ColIndex>> {
     using type = PrintExecuter<ColumnPrinter<ColName, ColType, ColIndex>, RowEndPrinter>;
 };
 
 template <FixedString FirstColName, FixedString ...RestColNames, typename FirstColType, typename ...RestColTypes, std::size_t FirstColIndex, std::size_t ...RestColIndices>
-struct ConstructColumnPrinterImpl<NameList<FirstColName, RestColNames...>, TypeList<FirstColType, RestColTypes...>, std::integer_sequence<std::size_t, FirstColIndex, RestColIndices...>> {
+struct ConstructPrintExecuterImpl<NameList<FirstColName, RestColNames...>, TypeList<FirstColType, RestColTypes...>, std::integer_sequence<std::size_t, FirstColIndex, RestColIndices...>> {
     using type = PrintExecuterMerge<
         PrintExecuter<ColumnPrinter<FirstColName, FirstColType, FirstColIndex>, ColumnSeparatorPrinter>,
-        typename ConstructColumnPrinterImpl<NameList<RestColNames...>, TypeList<RestColTypes...>, std::integer_sequence<std::size_t, RestColIndices...>>::type
+        typename ConstructPrintExecuterImpl<NameList<RestColNames...>, TypeList<RestColTypes...>, std::integer_sequence<std::size_t, RestColIndices...>>::type
     >;
 };
 
 template <typename ColumnNames, typename ColumnTypes, typename ColumnIndices>
-using ConstructColumnPrinter = PrintExecuterMerge<
+using ConstructPrintExecuter = PrintExecuterMerge<
     PrintExecuter<RowStartPrinter>,
-    typename ConstructColumnPrinterImpl<ColumnNames, ColumnTypes, ColumnIndices>::type
+    typename ConstructPrintExecuterImpl<ColumnNames, ColumnTypes, ColumnIndices>::type
 >;
 
 } // namespace internal

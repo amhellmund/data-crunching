@@ -15,7 +15,9 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 
+#include <sstream>
 #include <vector>
+#include <ranges>
 
 #include "data_crunching/dataframe.hpp"
 
@@ -184,16 +186,56 @@ TEST(DataFrame, JoinWithType) {
     EXPECT_THAT(dfjoined.getColumn<"flt">(), ::testing::ElementsAre(50.0f));
 }
 
+std::vector<std::string> getLines (std::stringstream& sstr) {
+    std::string line;
+    std::vector<std::string> lines;
+    while (std::getline(sstr, line)) {
+        lines.push_back(line);
+    }
+    return lines;
+}
+
+bool contains(std::string_view str_to_search_for, std::string_view str_to_search_in) {
+    return str_to_search_in.find(str_to_search_for) != str_to_search_in.npos;
+}
+
 TEST(DataFrame, Print) {
     DataFrame<
-        Column<"id1", int>,
-        Column<"id2", char>,
-        Column<"dbl", double>,
-        Column<"str", std::string>,
-        Column<"bool", bool>
+        Column<"a", int>,
+        Column<"b", char>,
+        Column<"c", double>,
+        Column<"d", std::string>,
+        Column<"e", bool>
     > testdf1;
     testdf1.insert(10, 'A', 20.0, "ABCDEFGHIHKL", true);
-    testdf1.print<Select<"id1", "dbl">>(PrintOptions{}, std::cout);
-    testdf1.print(PrintOptions{}, std::cout);
-    EXPECT_TRUE(false);
+
+    std::stringstream sstr;
+    testdf1.print<Select<"a", "b", "e">>(PrintOptions{}, sstr);
+    const auto& lines = getLines(sstr);
+    ASSERT_EQ(lines.size(), 6);
+
+    const auto& table_header = lines[1];
+    EXPECT_TRUE(contains("a", table_header));
+    EXPECT_TRUE(contains("a", table_header));
+    EXPECT_FALSE(contains("c", table_header));
+    EXPECT_FALSE(contains("d", table_header));
+    EXPECT_TRUE(contains("e", table_header));
+    EXPECT_TRUE(std::ranges::all_of(
+        lines | std::views::take(lines.size()-1), 
+        [line_size=lines[0].size()](std::size_t width) {
+            return width == line_size;
+        },
+        [](std::string_view str) {
+            return str.size();
+        }
+    ));
+
+    const auto& data_line = lines[3];
+    EXPECT_TRUE(contains("10", data_line));
+    EXPECT_TRUE(contains("A", data_line));
+    EXPECT_TRUE(contains("true", data_line));
+
+    const auto& row_summary_line = lines[5];
+    EXPECT_TRUE(contains("Rows in DataFrame", row_summary_line));
+    EXPECT_TRUE(contains("1", row_summary_line));
 }
