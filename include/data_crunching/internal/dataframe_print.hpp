@@ -61,7 +61,7 @@ struct DataFormatter<T> {
     }
 
     static int getWidth (const PrintOptions&) {
-        return std::numeric_limits<T>::digits10 + 2;
+        return std::numeric_limits<T>::digits10 + 1 /* next higher digit */ + 1 /* sign */;
     }
 };
 
@@ -73,7 +73,7 @@ struct DataFormatter<T> {
     }
 
     static int getWidth (const PrintOptions& print_options) {
-        return print_options.fixedpoint_width + 1;
+        return print_options.fixedpoint_width + 1 /* sign */;
     }
 };
 
