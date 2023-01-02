@@ -36,9 +36,8 @@ The below code exemplifies how to use the `DataFrame` class to perform data crun
     #include <string>
     
     #include <data_crunching/dataframe.hpp>
-    #include <data_crunching/dataframe/load.hpp>
 
-    using DataFrame = dacr::DataFrame<
+    using DataFramePerson = dacr::DataFrame<
         dacr::Column<"name", std::string>,
         dacr::Column<"city", std::string>,
         dacr::Column<"age", int>,
@@ -46,8 +45,15 @@ The below code exemplifies how to use the `DataFrame` class to perform data crun
         dacr::Column<"weight_in_kg", int>
     >;
 
+    using DataFrameCity = dacr::DataFrame<
+        dacr::Column<"city", std::string>,
+        dacr::Column<"country", std::string>,
+        dacr::Column<"continent", std::string>
+    >;
+
     int main (int argc, char*argv) {
-        auto df = dacr::load_csv<DataFrame, dacr::CSVInOrder>("input.csv");
+        auto df_person = dacr::load_csv<DataFramePerson, dacr::CSVInOrder>("person.csv");
+        auto df_city = dacr::load_csv<DataFrameCity, dacr::CSVInOrder>("city.csv");
 
         // compute body-mass-index into a new column applying the lambda to each row
         // the type for column "bmi" is deduced automatically
@@ -63,11 +69,19 @@ The below code exemplifies how to use the `DataFrame` class to perform data crun
             return dacr_data("age") >= 60;
         });
 
+        // join with CITY dataset to get countries and continents
+        auto df_with_geo_information = df_with_bmi.join<"city">(df_city);
+
         // compute average BMI grouped by cities for older people
         auto df_avg_bmi_by_city = df_bmi_for_older_age.summarize<
-            dacr::Avg<"bmi">,
-            dacr::GroupBy<"city">
+            dacr::GroupBy<"country">,
+            dacr::Avg<"bmi">
         >();
 
-        df_avg_bmi_by_city.print();
+        df_avg_bmi_by_city.print({
+            .fixedpoint_width = 5,
+            .fixedpoint_precision = 2,
+            .string_width = 12,
+            .max_rows = 100,
+        });
     }

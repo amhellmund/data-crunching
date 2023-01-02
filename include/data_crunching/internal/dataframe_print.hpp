@@ -40,6 +40,15 @@ struct PrintOptions {
 namespace internal {
 
 // ############################################################################
+// Concepts: Arithmetic Data Types
+// ############################################################################
+template <typename T>
+concept IsIntegral = std::is_integral_v<T>;
+
+template <typename T>
+concept IsFloatingPoint = std::is_floating_point_v<T>;
+
+// ############################################################################
 // Trait: Data Formatter
 // ############################################################################
 template <typename T>
@@ -53,8 +62,7 @@ struct DataFormatter {
     }
 };
 
-template <typename T>
-requires (std::is_integral_v<T>)
+template <IsIntegral T>
 struct DataFormatter<T> {
     static void format(std::ostream& stream, const T& value, const PrintOptions&) {
         stream << value;
@@ -65,8 +73,7 @@ struct DataFormatter<T> {
     }
 };
 
-template <typename T>
-requires (std::is_floating_point_v<T>)
+template <IsFloatingPoint T>
 struct DataFormatter<T> {
     static void format(std::ostream& stream, const T& value, const PrintOptions& print_options) {
         stream << std::left << std::setw(print_options.fixedpoint_width) << std::setprecision(print_options.fixedpoint_precision) << value;
