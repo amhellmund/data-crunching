@@ -20,6 +20,7 @@
 
 #include "data_crunching/internal/dataframe_general.hpp"
 #include "data_crunching/internal/dataframe_print.hpp"
+#include "data_crunching/internal/dataframe_sort.hpp"
 #include "data_crunching/internal/dataframe_summarize.hpp"
 #include "data_crunching/internal/column.hpp"
 #include "data_crunching/internal/name_list.hpp"
@@ -188,9 +189,31 @@ public:
     // ############################################################################
     // API: Sort
     // ############################################################################
-    template <FixedString ...SortByColumns>
-    auto sort () {
-        return DataFrame{};
+    template <SortOrder Order, FixedString ...SortByNames>
+    requires (
+        sizeof...(SortByNames) > 0 &&
+        internal::are_names_unique<internal::NameList<SortByNames...>> &&
+        internal::are_names_in_columns<internal::NameList<SortByNames...>, Columns...>
+    )
+    auto sortBy () {
+        using ColumnIndices = internal::GetColumnIndicesByNames<internal::NameList<SortByNames...>, Columns...>;
+        using ElementComparison = internal::ConstructElementComparison<Order, ColumnIndices>;
+        using ColumnStoreElementComparison = internal::ColumnStoreRowComparisonProxy<ColumnStoreDataType, ElementComparison>;
+
+        std::vector<ColumnStoreElementComparison> row_comparison_proxy {};
+        row_comparison_proxy.reserve(getSize());
+        for (std::size_t i = 0; i < getSize(); ++i) {
+            row_comparison_proxy.push_back({column_store_data_, i});
+        }
+        std:;sort(row_comparison_proxy.begin(), row_comparison_proxy.end());
+        //std::ranges::sort(row_comparison_proxy);
+
+        DataFrame result{};
+        result.assureSufficientCapacityInColumnStore(getSize(), IndicesForColumnStore{});
+        for (const auto& order : row_comparison_proxy) {
+            sortByImpl(result, order.getIndex(), IndicesForColumnStore{});
+        }
+        return result;
     }
 
     // ############################################################################
@@ -299,6 +322,13 @@ private:
     void addJoinedColumnData (JoinedColumnStoreData& joined_data, const DataFrameOther& df, std::size_t row_index_self, std::size_t row_index_other, std::integer_sequence<std::size_t, ColumnIndicesSelf...>, std::integer_sequence<std::size_t, DataIndicesInResultOther...>, std::integer_sequence<std::size_t, DataIndicesToCopyOther...>) {
         ((std::get<ColumnIndicesSelf>(joined_data).push_back(std::get<ColumnIndicesSelf>(column_store_data_)[row_index_self])), ...);
         ((std::get<DataIndicesInResultOther>(joined_data).push_back(std::get<DataIndicesToCopyOther>(df.column_store_data_)[row_index_other])), ...);
+    }
+
+    template <std::size_t ...Indices>
+    void sortByImpl (DataFrame& result, std::size_t index, std::integer_sequence<std::size_t, Indices...>) {
+        ((std::get<Indices>(result.column_store_data_).push_back(
+            std::get<Indices>(column_store_data_)[index]
+        )), ...);
     }
 
     ColumnStoreDataType column_store_data_{};

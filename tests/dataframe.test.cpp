@@ -21,12 +21,7 @@
 
 #include "data_crunching/dataframe.hpp"
 
-using dacr::Column;
-using dacr::DataFrame;
-using dacr::Join;
-using dacr::PrintOptions;
-using dacr::Select;
-using dacr::SelectAll;
+using namespace dacr;
 
 TEST(DataFrame, ValidDataFrameDefinition) {
     EXPECT_NO_THROW((DataFrame<>()));
@@ -197,6 +192,41 @@ std::vector<std::string> getLines (std::stringstream& sstr) {
 
 bool contains(std::string_view str_to_search_for, std::string_view str_to_search_in) {
     return str_to_search_in.find(str_to_search_for) != str_to_search_in.npos;
+}
+
+TEST(DataFrame, SortBySingleColumn) {
+    DataFrame<
+        Column<"a", int>,
+        Column<"b", char>,
+        Column<"c", double>
+    > testdf;
+    testdf.insert(10, 'A', 42.0);
+    testdf.insert(5, 'Z', 43.0);
+    testdf.insert(20, 'B', 44.0);
+    testdf.insert(10, 'C', 45.0);
+
+    auto sorted_by_single_asc = testdf.sortBy<SortOrder::Ascending, "a">();
+    EXPECT_THAT(sorted_by_single_asc.getColumn<"a">(), ::testing::ElementsAre(5, 10, 10, 20));
+    auto column_b = sorted_by_single_asc.getColumn<"b">();
+    EXPECT_EQ(column_b[0], 'Z');
+    EXPECT_EQ(column_b[3], 'B');
+    auto column_c = sorted_by_single_asc.getColumn<"c">();
+    EXPECT_DOUBLE_EQ(column_c[0], 43.0);
+    EXPECT_DOUBLE_EQ(column_c[3], 44.0);
+
+    auto sorted_by_single_desc = testdf.sortBy<SortOrder::Descending, "a">();
+    EXPECT_THAT(sorted_by_single_desc.getColumn<"a">(), ::testing::ElementsAre(20, 10, 10, 5));
+    column_b = sorted_by_single_desc.getColumn<"b">();
+    EXPECT_EQ(column_b[0], 'B');
+    EXPECT_EQ(column_b[3], 'Z');
+    column_c = sorted_by_single_desc.getColumn<"c">();
+    EXPECT_DOUBLE_EQ(column_c[0], 44.0);
+    EXPECT_DOUBLE_EQ(column_c[3], 43.0);
+
+    auto sorted_by_two_asc = testdf.sortBy<SortOrder::Ascending, "a", "b">();
+    EXPECT_THAT(sorted_by_two_asc.getColumn<"a">(), ::testing::ElementsAre(5, 10, 10, 20));
+    EXPECT_THAT(sorted_by_two_asc.getColumn<"b">(), ::testing::ElementsAre('Z', 'A', 'C', 'B'));
+    EXPECT_THAT(sorted_by_two_asc.getColumn<"c">(), ::testing::ElementsAre(43.0, 42.0, 45.0, 44.0));
 }
 
 TEST(DataFrame, Print) {
