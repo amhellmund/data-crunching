@@ -22,6 +22,7 @@
 #include <string>
 
 #include "data_crunching/internal/fixed_string.hpp"
+#include "data_crunching/internal/utils.hpp"
 
 namespace dacr {
 
@@ -38,15 +39,6 @@ struct PrintOptions {
 };
 
 namespace internal {
-
-// ############################################################################
-// Concepts: Arithmetic Data Types
-// ############################################################################
-template <typename T>
-concept IsIntegral = std::is_integral_v<T>;
-
-template <typename T>
-concept IsFloatingPoint = std::is_floating_point_v<T>;
 
 // ############################################################################
 // Trait: Data Formatter

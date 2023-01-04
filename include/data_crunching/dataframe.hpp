@@ -181,8 +181,14 @@ public:
     // ############################################################################
     // API: Summarize
     // ############################################################################
-    template <typename GroupBy, typename ...Ops>
+    template <internal::IsGroupBySpec GroupBy, internal::IsSummarizeOp ...Ops>
+    requires (internal::are_valid_summarize_ops<TypeList<Ops...>, Columns...>)
     auto summarize () {
+        if constexpr (not std::is_same_v<GroupBy, GroupByNone>) {
+        }
+        else {
+
+        }
         return DataFrame{};
     }
 
@@ -205,8 +211,7 @@ public:
         for (std::size_t i = 0; i < getSize(); ++i) {
             row_comparison_proxy.push_back({column_store_data_, i});
         }
-        std:;sort(row_comparison_proxy.begin(), row_comparison_proxy.end());
-        //std::ranges::sort(row_comparison_proxy);
+        std::sort(row_comparison_proxy.begin(), row_comparison_proxy.end());
 
         DataFrame result{};
         result.assureSufficientCapacityInColumnStore(getSize(), IndicesForColumnStore{});

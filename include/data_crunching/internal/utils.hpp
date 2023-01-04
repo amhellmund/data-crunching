@@ -18,9 +18,24 @@
 #include <ranges>
 #include <tuple>
 
+#include <type_traits>
+
 #include "data_crunching/internal/type_list.hpp"
 
 namespace dacr::internal {
+
+// ############################################################################
+// Concepts: Arithmetic Data Types
+// ############################################################################
+template <typename T>
+concept IsArithmetic = std::is_arithmetic_v<T>;
+
+template <typename T>
+concept IsIntegral = std::is_integral_v<T>;
+
+template <typename T>
+concept IsFloatingPoint = std::is_floating_point_v<T>;
+
 
 // ############################################################################
 // Trait: Tuple Prepend

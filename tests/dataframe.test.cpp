@@ -194,7 +194,7 @@ bool contains(std::string_view str_to_search_for, std::string_view str_to_search
     return str_to_search_in.find(str_to_search_for) != str_to_search_in.npos;
 }
 
-TEST(DataFrame, SortBySingleColumn) {
+TEST(DataFrame, SortBy) {
     DataFrame<
         Column<"a", int>,
         Column<"b", char>,
@@ -227,6 +227,22 @@ TEST(DataFrame, SortBySingleColumn) {
     EXPECT_THAT(sorted_by_two_asc.getColumn<"a">(), ::testing::ElementsAre(5, 10, 10, 20));
     EXPECT_THAT(sorted_by_two_asc.getColumn<"b">(), ::testing::ElementsAre('Z', 'A', 'C', 'B'));
     EXPECT_THAT(sorted_by_two_asc.getColumn<"c">(), ::testing::ElementsAre(43.0, 42.0, 45.0, 44.0));
+}
+
+TEST(DataFrame, GroupBy) {
+    DataFrame<
+        Column<"a", int>,
+        Column<"b", char>,
+        Column<"c", double>,
+        Column<"d", bool>
+    > testdf;
+    testdf.insert(10, 'A', 30.0, true);
+    testdf.insert(20, 'A', 45.0, false);
+    testdf.insert(20, 'A', 60.0, false);
+
+    auto summarize_sum_no_group_by = testdf.summarize<GroupByNone, Sum<"c">>();
+    auto summarize_min_group_by_single_column = testdf.summarize<GroupBy<"b">, Min<"c">>();
+    auto summarize_avg_countif_group_by_two_columns = testdf.summarize<GroupBy<"a", "b">, Min<"c">, CountIf<"d">>();
 }
 
 TEST(DataFrame, Print) {
