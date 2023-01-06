@@ -17,6 +17,7 @@
 
 #include <ranges>
 #include <vector>
+#include <iostream>
 
 #include "data_crunching/internal/dataframe_general.hpp"
 #include "data_crunching/internal/dataframe_print.hpp"

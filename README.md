@@ -32,56 +32,67 @@ Complementary features to enrich the `DataFrame` API, e.g. to read CSV files int
 
 The below code exemplifies how to use the `DataFrame` class to perform data crunching.
 
-    #include <cmath>
     #include <string>
-    
     #include <data_crunching/dataframe.hpp>
 
-    using DataFramePerson = dacr::DataFrame<
-        dacr::Column<"name", std::string>,
-        dacr::Column<"city", std::string>,
-        dacr::Column<"age", int>,
-        dacr::Column<"size_in_m", double>,
-        dacr::Column<"weight_in_kg", int>
-    >;
+    auto getPersonData() {
+        using DataFrame = dacr::DataFrame<
+            dacr::Column<"name", std::string>,
+            dacr::Column<"city", std::string>,
+            dacr::Column<"age", int>,
+            dacr::Column<"size_in_m", double>,
+            dacr::Column<"weight_in_kg", int>
+        >;
 
-    using DataFrameCity = dacr::DataFrame<
-        dacr::Column<"city", std::string>,
-        dacr::Column<"country", std::string>,
-        dacr::Column<"continent", std::string>
-    >;
+        DataFrame df;
+        df.insert("NameA", "Berlin", 30, 1.75, 80);
+        df.insert("NameB", "London", 62, 1.60, 100);
+        df.insert("NameC", "Seoul", 20, 1.90, 70);
+        df.insert("NameD", "Tokio", 59, 1.72, 60);
+        df.insert("NameE", "San Francisco", 40, 1.79, 95);
+        df.insert("NameF", "Toronto", 51, 1.99, 156);
+        return df;
+    }
 
-    int main (int argc, char*argv) {
-        auto df_person = dacr::load_csv<DataFramePerson, dacr::CSVInOrder>("person.csv");
-        auto df_city = dacr::load_csv<DataFrameCity, dacr::CSVInOrder>("city.csv");
+    auto getCityData() {
+        using DataFrame = dacr::DataFrame<
+            dacr::Column<"city", std::string>,
+            dacr::Column<"country", std::string>,
+            dacr::Column<"continent", std::string>
+        >;
 
-        // compute body-mass-index into a new column applying the lambda to each row
-        // the type for column "bmi" is deduced automatically
-        auto df_with_bmi = df.apply<"bmi">([](dacr_param) { 
+        DataFrame df;
+        df.insert("Berlin", "Germany", "Europe");
+        df.insert("London", "England", "Europe");
+        df.insert("Seoul", "South Korea", "Asia");
+        df.insert("Tokio", "Japan", "Asia");
+        df.insert("San Francisco", "USA", "North America");
+        df.insert("Toronto", "Canada", "North America");
+        return df;
+    }
+
+    int main (int argc, char *argv[]) {
+        auto df_person = getPersonData(); 
+        auto df_bmi = df_person.apply<"bmi">([](dacr_param) { 
             return (
-                static_cast<double>(dacr_data("weight_in_kg")) / 
-                std::pow(dacr_data("size_in_cm"), 2)
+                static_cast<double>(dacr_value("weight_in_kg")) / 
+                (dacr_value("size_in_m") * dacr_value("size_in_m"))
             );
         });
-
-        // query all the persons with a BMI of 25 or higher
-        auto df_bmi_for_older_age = df_with_bmi.query([](dacar_param) {
-            return dacr_data("age") >= 60;
+        auto df_bmi_below_60 = df_bmi.query([](dacr_param) {
+            return dacr_value("age") < 60;
         });
-
-        // join with CITY dataset to get countries and continents
-        auto df_with_geo_information = df_with_bmi.join<"city">(df_city);
-
-        // compute average BMI grouped by cities for older people
-        auto df_avg_bmi_by_city = df_bmi_for_older_age.summarize<
+        
+        auto df_city = getCityData();  
+        auto df_join_with_city = df_bmi_below_60.join<dacr::Join::Inner, "city">(df_city);
+        auto df_summarize = df_join_with_city.summarize<
             dacr::GroupBy<"country">,
-            dacr::Avg<"bmi">
+            dacr::Avg<"bmi", "bmi_avg">
         >();
 
-        df_avg_bmi_by_city.print({
-            .fixedpoint_width = 5,
-            .fixedpoint_precision = 2,
-            .string_width = 12,
-            .max_rows = 100,
+        auto df_summarize_sorted = df_summarize.sortBy<dacr::SortOrder::Ascending, "country">();
+
+        df_summarize_sorted.print({
+            .string_width = 20,
         });
     }
