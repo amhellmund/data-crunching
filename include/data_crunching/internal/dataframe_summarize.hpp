@@ -12,40 +12,44 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#ifndef DATA_CRUNCHING_INTERNAL_DATAFRAME_SUMMARIZE_HPP
+#ifndef DATA_CRUNCHING_INTERNAL_DATAFRDATA_CRUNCHING_INTERNAL_DATAFRAME_SUMMARIZE_HPPAME_SUMMARIZE_HPP
 #define DATA_CRUNCHING_INTERNAL_DATAFRAME_SUMMARIZE_HPP
 
 #include "data_crunching/internal/fixed_string.hpp"
 #include "data_crunching/internal/utils.hpp"
 #include "data_crunching/internal/name_list.hpp"
+#include "data_crunching/internal/type_list.hpp"
 #include "data_crunching/internal/column.hpp"
 
 namespace dacr {
 
-struct GroupByNone {};
-
 template <FixedString ...GroupByNames>
-struct GroupBy {};
+struct GroupBy {
+    static constexpr std::size_t NumColumns = sizeof...(GroupByNames);
+    using Names = internal::NameList<GroupByNames...>;
+};
 
-template <FixedString ...ColumnNames>
+using GroupByNone = GroupBy<>;
+
+template <FixedString ColumnName, FixedString NewColumnName>
 struct Sum {};
 
-template <FixedString ...ColumnNames>
+template <FixedString ColumnName, FixedString NewColumnName>
 struct Min {};
 
-template <FixedString ...ColumnNames>
+template <FixedString ColumnName, FixedString NewColumnName>
 struct Max {};
 
-template <FixedString ...ColumnNames>
+template <FixedString ColumnName, FixedString NewColumnName>
 struct Avg {};
 
-template <FixedString ...ColumnNames>
+template <FixedString ColumnName, FixedString NewColumnName>
 struct StdDev {};
 
-template <FixedString ...ColumnNames>
+template <FixedString ColumnName, FixedString NewColumnName>
 struct CountIf {};
 
-template <FixedString ...ColumnNames>
+template <FixedString ColumnName, FixedString NewColumnName>
 struct CountIfNot {};
 
 namespace internal {
@@ -72,26 +76,26 @@ concept IsGroupBySpec = IsGroupBySpecImpl<T>::value;
 template <typename>
 struct IsSummarizeOpImpl : std::false_type {};
 
-template <FixedString ...ColumnNames>
-struct IsSummarizeOpImpl<Sum<ColumnNames...>> : std::true_type {};
+template <FixedString ColumnName, FixedString NewColumnName>
+struct IsSummarizeOpImpl<Sum<ColumnName, NewColumnName>> : std::true_type {};
 
-template <FixedString ...ColumnNames>
-struct IsSummarizeOpImpl<Min<ColumnNames...>> : std::true_type {};
+template <FixedString ColumnName, FixedString NewColumnName>
+struct IsSummarizeOpImpl<Min<ColumnName, NewColumnName>> : std::true_type {};
 
-template <FixedString ...ColumnNames>
-struct IsSummarizeOpImpl<Max<ColumnNames...>> : std::true_type {};
+template <FixedString ColumnName, FixedString NewColumnName>
+struct IsSummarizeOpImpl<Max<ColumnName, NewColumnName>> : std::true_type {};
 
-template <FixedString ...ColumnNames>
-struct IsSummarizeOpImpl<Avg<ColumnNames...>> : std::true_type {};
+template <FixedString ColumnName, FixedString NewColumnName>
+struct IsSummarizeOpImpl<Avg<ColumnName, NewColumnName>> : std::true_type {};
 
-template <FixedString ...ColumnNames>
-struct IsSummarizeOpImpl<StdDev<ColumnNames...>> : std::true_type {};
+template <FixedString ColumnName, FixedString NewColumnName>
+struct IsSummarizeOpImpl<StdDev<ColumnName, NewColumnName>> : std::true_type {};
 
-template <FixedString ...ColumnNames>
-struct IsSummarizeOpImpl<CountIf<ColumnNames...>> : std::true_type {};
+template <FixedString ColumnName, FixedString NewColumnName>
+struct IsSummarizeOpImpl<CountIf<ColumnName, NewColumnName>> : std::true_type {};
 
-template <FixedString ...ColumnNames>
-struct IsSummarizeOpImpl<CountIfNot<ColumnNames...>> : std::true_type {};
+template <FixedString ColumnName, FixedString NewColumnName>
+struct IsSummarizeOpImpl<CountIfNot<ColumnName, NewColumnName>> : std::true_type {};
 
 template <typename T>
 concept IsSummarizeOp = IsSummarizeOpImpl<T>::value;
@@ -102,10 +106,6 @@ concept IsSummarizeOp = IsSummarizeOpImpl<T>::value;
 template <std::size_t InIndex, IsArithmetic T>
 class SummarizerSum {
 public:
-    static constexpr auto getSuffix () {
-        return FixedString("_sum");
-    }
-
     template <typename DataIn>
     void summarize (const DataIn& in, std::size_t index) {
         sum_ += std::get<InIndex>(in)[index];
@@ -241,12 +241,13 @@ private:
 // ############################################################################
 // Trait: Is Valid Summarize Op
 // ############################################################################
+// ToDo: add here that summarize column names are not in group-by names
 template <typename ...>
 struct AreValidSummarizeOpsImpl : std::true_type {};
 
-template <template <FixedString ...> typename Op, FixedString ...ColumnNames, typename ...RestOps, typename ...Columns>
-struct AreValidSummarizeOpsImpl<TypeList<Op<ColumnNames...>, RestOps...>, Columns...> {
-    static constexpr bool value = are_names_in_columns<NameList<ColumnNames...>, Columns...> && AreValidSummarizeOpsImpl<TypeList<RestOps...>, Columns...>::value;
+template <template <FixedString, FixedString> typename Op, FixedString ColumnName, FixedString NewColumnName, typename ...RestOps, typename ...Columns>
+struct AreValidSummarizeOpsImpl<TypeList<Op<ColumnName, NewColumnName>, RestOps...>, Columns...> {
+    static constexpr bool value = are_names_in_columns<NameList<ColumnName>, Columns...> && AreValidSummarizeOpsImpl<TypeList<RestOps...>, Columns...>::value;
 };
 
 template <typename Ops, typename ...Columns>
@@ -259,64 +260,222 @@ constexpr bool are_valid_summarize_ops = AreValidSummarizeOpsImpl<Ops, Columns..
 template <typename, typename ...>
 struct GetColumnForOpImpl {};
 
-template <FixedString ColumnName, typename ...Columns>
-struct GetColumnForOpImpl<Sum<ColumnName>, Columns...> {
-    using type = Column<ColumnName.append("_sum"), GetColumnTypeByName<ColumnName, Columns...>>;
-};
-
-template <FixedString ColumnName, typename ...Columns>
-struct GetColumnForOpImpl<Min<ColumnName>, Columns...> {
-    using type = Column<ColumnName.append("_min"), GetColumnTypeByName<ColumnName, Columns...>>;
-};
-
-template <FixedString ColumnName, typename ...Columns>
-struct GetColumnForOpImpl<Max<ColumnName>, Columns...> {
-    using type = Column<ColumnName.append("_max"), GetColumnTypeByName<ColumnName, Columns...>>;
-};
-
-template <FixedString ColumnName, typename ...Columns>
-struct GetColumnForOpImpl<Avg<ColumnName>, Columns...> {
-    using type = Column<ColumnName.append("_avg"), GetColumnTypeByName<ColumnName, Columns...>>;
-};
-
-template <FixedString ColumnName, typename ...Columns>
-struct GetColumnForOpImpl<StdDev<ColumnName>, Columns...> {
-    using type = Column<ColumnName.append("_stddev"), GetColumnTypeByName<ColumnName, Columns...>>;
-};
-
-template <FixedString ColumnName, typename ...Columns>
-struct GetColumnForOpImpl<CountIf<ColumnName>, Columns...> {
-    using type = Column<ColumnName.append("_cntif"), GetColumnTypeByName<ColumnName, Columns...>>;
-};
-
-template <FixedString ColumnName, typename ...Columns>
-struct GetColumnForOpImpl<CountIfNot<ColumnName>, Columns...> {
-    using type = Column<ColumnName.append("_cntifnot"), GetColumnTypeByName<ColumnName, Columns...>>;
+template <template <FixedString, FixedString> typename Op, FixedString ColumnName, FixedString NewColumnName, typename ...Columns>
+struct GetColumnForOpImpl<Op<ColumnName, NewColumnName>, Columns...> {
+    using type = Column<NewColumnName, GetColumnTypeByName<ColumnName, Columns...>>;
 };
 
 template <typename Op, typename ...Columns>
 using GetColumnForOp = typename GetColumnForOpImpl<Op, Columns...>::type;
 
-// template <utils::FixedString ColumnName>
-// struct GetColumnForOp<Min<ColumnName>> {
-//     using type = Column<ColumnName.append("_min"), GetColumnTypeByName<ColumnName>>;
-// };
+// ############################################################################
+// Trait: GetNewColumnsForOps
+// ############################################################################
+template <typename ...>
+struct GetNewColumnsForOpsImpl {
+    using type = TypeList<>;
+};
 
-// template <utils::FixedString ColumnName>
-// struct GetColumnForOp<Max<ColumnName>> {
-//     using type = Column<ColumnName.append("_max"), GetColumnTypeByName<ColumnName>>;
-// };
+template <typename FirstOp, typename ...RestOps, typename ...Columns>
+struct GetNewColumnsForOpsImpl<TypeList<FirstOp, RestOps...>, Columns...> {
+    using type = TypeListPrepend<
+        GetColumnForOp<FirstOp, Columns...>,
+        typename GetNewColumnsForOpsImpl<TypeList<RestOps...>, Columns...>::type
+    >;
+};
 
-// template <utils::FixedString ColumnName>
-// struct GetColumnForOp<Avg<ColumnName>> {
-//     using type = Column<ColumnName.append("_avg"), double>;
-// };
+template <typename Ops, typename ...Columns>
+using GetNewColumnsForOps = typename GetNewColumnsForOpsImpl<Ops, Columns...>::type;
 
-// template <utils::FixedString ColumnName>
-// struct GetColumnForOp<StdDev<ColumnName>> {
-//     using type = Column<ColumnName.append("_stddev"), double>;
-// };
+// ############################################################################
+// Trait: Compound Summarizer
+// ############################################################################
+template <typename ...Summarizers>
+struct CompoundSummarizer {
+    static constexpr std::size_t NumSummarizers = sizeof...(Summarizers);
+    using Data = std::tuple<Summarizers...>;
+    
+    static auto create () {
+        return std::make_tuple(Summarizers{}...);
+    }
 
+    template <typename SummarizerData, typename ColumnStoreData>
+    static void summarize(SummarizerData& summarizer_data, const ColumnStoreData& column_store_data, std::size_t row_index) {
+        summarizeImpl(summarizer_data, column_store_data, row_index, std::index_sequence_for<Summarizers...>{});
+    }
+
+    template <typename SummarizerData, typename ColumnStoreData, std::size_t ...SummarizerIndices>
+    static void summarizeImpl(SummarizerData& summarizer_data, const ColumnStoreData& column_store_data, std::size_t row_index, std::integer_sequence<std::size_t, SummarizerIndices...>) {
+        ((std::get<SummarizerIndices>(summarizer_data).summarize(column_store_data, row_index)), ...);
+    }
+};
+
+// ############################################################################
+// Trait: Prepend Compound Summarizer
+// ############################################################################
+template <typename, typename>
+struct CompoundSummarizerPrepend {};
+
+template <typename S, typename ...Rest>
+struct CompoundSummarizerPrepend<S, CompoundSummarizer<Rest...>> {
+    using type = CompoundSummarizer<S, Rest...>;
+};
+
+// ############################################################################
+// Trait: Get Summarizer For Op
+// ############################################################################
+template <typename ...>
+struct GetSummarizerForOpImpl {};
+
+template <FixedString ColumnName, FixedString NewColumnName, typename ...Columns>
+struct GetSummarizerForOpImpl<Min<ColumnName, NewColumnName>, Columns...> {
+    using type = SummarizerMin<get_column_index_by_name<ColumnName, Columns...>, GetColumnTypeByName<ColumnName, Columns...>>;
+};
+
+template <FixedString ColumnName, FixedString NewColumnName, typename ...Columns>
+struct GetSummarizerForOpImpl<Max<ColumnName, NewColumnName>, Columns...> {
+    using type = SummarizerMax<get_column_index_by_name<ColumnName, Columns...>, GetColumnTypeByName<ColumnName, Columns...>>;
+};
+
+template <FixedString ColumnName, FixedString NewColumnName, typename ...Columns>
+struct GetSummarizerForOpImpl<Sum<ColumnName, NewColumnName>, Columns...> {
+    using type = SummarizerSum<get_column_index_by_name<ColumnName, Columns...>, GetColumnTypeByName<ColumnName, Columns...>>;
+};
+
+template <FixedString ColumnName, FixedString NewColumnName, typename ...Columns>
+struct GetSummarizerForOpImpl<Avg<ColumnName, NewColumnName>, Columns...> {
+    using type = SummarizerAvg<get_column_index_by_name<ColumnName, Columns...>, GetColumnTypeByName<ColumnName, Columns...>>;
+};
+
+template <FixedString ColumnName, FixedString NewColumnName, typename ...Columns>
+struct GetSummarizerForOpImpl<StdDev<ColumnName, NewColumnName>, Columns...> {
+    using type = SummarizerStdDev<get_column_index_by_name<ColumnName, Columns...>, GetColumnTypeByName<ColumnName, Columns...>>;
+};
+
+template <FixedString ColumnName, FixedString NewColumnName, typename ...Columns>
+struct GetSummarizerForOpImpl<CountIf<ColumnName, NewColumnName>, Columns...> {
+    using type = SummarizerCountIf<get_column_index_by_name<ColumnName, Columns...>, GetColumnTypeByName<ColumnName, Columns...>>;
+};
+
+template <FixedString ColumnName, FixedString NewColumnName, typename ...Columns>
+struct GetSummarizerForOpImpl<CountIfNot<ColumnName, NewColumnName>, Columns...> {
+    using type = SummarizerCountIfNot<get_column_index_by_name<ColumnName, Columns...>, GetColumnTypeByName<ColumnName, Columns...>>;
+};
+
+template <typename Ops, typename ...Columns>
+using GetSummarizerForOp = typename GetSummarizerForOpImpl<Ops, Columns...>::type;
+
+
+// ############################################################################
+// Trait: Get Compound Summarizer
+// ############################################################################
+template <typename, typename ...>
+struct GetCompoundSummarizerImpl {
+    using type = CompoundSummarizer<>;
+};
+
+template <typename FirstOp, typename ...RestOps, typename ...Columns>
+struct GetCompoundSummarizerImpl<TypeList<FirstOp, RestOps...>, Columns...> {
+    using type = typename CompoundSummarizerPrepend<
+        GetSummarizerForOp<FirstOp, Columns...>,
+        typename GetCompoundSummarizerImpl<TypeList<RestOps...>, Columns...>::type
+    >::type;
+};
+
+template <typename Ops, typename ...Columns>
+using GetCompoundSummarizer = typename GetCompoundSummarizerImpl<Ops, Columns...>::type;
+
+// ############################################################################
+// Class: SummarizationExecuter
+// ############################################################################
+template <typename NewDataFrame, typename CompoundSummarizer>
+class SummarizationExecuterNoGroupBy {
+public:
+    SummarizationExecuterNoGroupBy () {
+        summarizer_data_.push_back(
+            CompoundSummarizer::create()
+        );
+    }
+
+    template <typename ColumnStoreData>
+    void summarize (const ColumnStoreData& column_store_data, std::size_t row_index) {
+        CompoundSummarizer::summarize(summarizer_data_[0], column_store_data, row_index);
+    }
+
+    auto constructResult () {
+        using SummarizerIndices = std::make_index_sequence<CompoundSummarizer::NumSummarizers>;
+        return constructResultImpl(SummarizerIndices{});
+    }
+
+    template <std::size_t ...SummarizerIndices>
+    auto constructResultImpl (std::integer_sequence<std::size_t, SummarizerIndices...>) {
+        NewDataFrame result;
+        for (auto loop_index = 0LU; loop_index < summarizer_data_.size(); ++loop_index) {
+            result.insert(
+                std::get<SummarizerIndices>(summarizer_data_[loop_index]).getState()...
+            );
+        }
+        return result;
+    }
+
+private:
+    std::vector<typename CompoundSummarizer::Data> summarizer_data_{};
+};
+
+template <typename NewDataFrame, typename GroupByColumnIndices, typename GroupByTypes, typename CompoundSummarizer>
+class SummarizationExecuterGroupBy {
+public:
+    template <typename ColumnStoreData>
+        void summarize(const ColumnStoreData& column_store_data, std::size_t row_index) {
+            auto index = getGroupByIndex(column_store_data, row_index, GroupByDataIndices{}, GroupByColumnIndices{});
+            if (index == -1) {
+                createNewGroupByEntry(column_store_data, row_index, GroupByColumnIndices{});;
+                index = group_by_data_.size() - 1;
+            }
+            CompoundSummarizer::summarize(summarizer_data_[index], column_store_data, row_index);
+        }
+
+        template <typename ColumnStoreData, std::size_t ... GroupByColumnIndicesInColumnStore>
+        void createNewGroupByEntry (const ColumnStoreData& column_store_data, std::size_t row_index, std::integer_sequence<std::size_t, GroupByColumnIndicesInColumnStore...>) {
+            group_by_data_.push_back(
+                std::make_tuple(std::get<GroupByColumnIndicesInColumnStore>(column_store_data)[row_index]...)
+            );
+            summarizer_data_.push_back(CompoundSummarizer::create());
+        }
+
+        template <typename ColumnStoreData, std::size_t ...GroupByDataIndices, std::size_t ...GroupByColumnIndicesInColumnStore>
+        int getGroupByIndex(const ColumnStoreData& column_store_data, std::size_t row_index, std::integer_sequence<std::size_t, GroupByDataIndices...>, std::integer_sequence<std::size_t, GroupByColumnIndicesInColumnStore...>) {
+            for (std::size_t loop_index = 0; loop_index < group_by_data_.size(); ++loop_index) {
+                if (((std::get<GroupByDataIndices>(group_by_data_[loop_index]) == std::get<GroupByColumnIndicesInColumnStore>(column_store_data)[row_index]) && ...)) {
+                    return loop_index;
+                }
+            }
+            return -1;
+        }
+
+    auto constructResult () {
+        using SummarizerIndices = std::make_index_sequence<CompoundSummarizer::NumSummarizers>;
+        return constructResultImpl(GroupByDataIndices{}, SummarizerIndices{});
+    }
+
+    template <std::size_t ...GroupByDataIndices, std::size_t ...SummarizerIndices>
+    auto constructResultImpl (std::integer_sequence<std::size_t, GroupByDataIndices...>, std::integer_sequence<std::size_t, SummarizerIndices...>) {
+        NewDataFrame result;
+        for (auto loop_index = 0LU; loop_index < group_by_data_.size(); ++loop_index) {
+            result.insert(
+                std::get<GroupByDataIndices>(group_by_data_[loop_index])...,
+                std::get<SummarizerIndices>(summarizer_data_[loop_index]).getState()...
+            );
+        }
+        return result;
+    }
+
+private:
+    using GroupByDataIndices = std::make_index_sequence<get_integer_sequence_size<GroupByColumnIndices>>;
+
+    std::vector<GroupByTypes> group_by_data_{};;
+    std::vector<typename CompoundSummarizer::Data> summarizer_data_{};
+};
 
 } // namespace internal
 

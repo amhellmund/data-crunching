@@ -30,6 +30,7 @@ namespace dacr {
 
 template <internal::IsColumn ...Columns>
 requires internal::are_names_unique<internal::GetColumnNames<Columns...>>
+// ToDO: column names must not be empty
 class DataFrame {
 public:
     template<internal::IsColumn ...OtherColumns>
@@ -107,9 +108,14 @@ public:
         internal::are_names_in_columns<internal::NameList<ColumnNames...>, Columns...>
     )
     auto select () {
-        using NewDataFrame = internal::GetDataFrameWithColumnsByName<internal::NameList<ColumnNames...>, Columns...>;
-        using SelectedColumnIndices = internal::GetColumnIndicesByNames<internal::NameList<ColumnNames...>, Columns...>;
-        return selectImpl<NewDataFrame>(SelectedColumnIndices{});
+        if constexpr (sizeof...(Columns) > 0) {
+            using NewDataFrame = internal::GetDataFrameWithColumnsByName<internal::NameList<ColumnNames...>, Columns...>;
+            using SelectedColumnIndices = internal::GetColumnIndicesByNames<internal::NameList<ColumnNames...>, Columns...>;
+            return selectImpl<NewDataFrame>(SelectedColumnIndices{});
+        }
+        else {
+            return DataFrame{};
+        }
     }
 
     // ############################################################################
@@ -121,17 +127,22 @@ public:
         internal::is_valid_select<SelectNames, Columns...>
     )
     auto apply (Func&& function) {
-        using SelectedNamesForApply = internal::GetSelectNameList<SelectNames, Columns...>;
-        using SelectedColumnIndices = internal::GetColumnIndicesByNames<SelectedNamesForApply, Columns...>;
-        using SelectedTypesForFunc = internal::GetColumnTypesByNames<SelectedNamesForApply, Columns...>;
-        using NamedTupleForFuncArgs = internal::ConstructNamedTuple<SelectedNamesForApply, SelectedTypesForFunc>;
-        using FuncReturnType = std::invoke_result_t<Func, NamedTupleForFuncArgs>;
-        using NewDataFrame = internal::ConstructDataFrameForApply<SelectedNamesForApply, NewColumnName, FuncReturnType, Columns...>;
-        
-        return applyImpl<NewDataFrame, NamedTupleForFuncArgs, SelectedNamesForApply::getSize()>(
-            std::forward<Func>(function),
-            SelectedColumnIndices{}
-        ); 
+        if constexpr (sizeof...(Columns) > 0) {
+            using SelectedNamesForApply = internal::GetSelectNameList<SelectNames, Columns...>;
+            using SelectedColumnIndices = internal::GetColumnIndicesByNames<SelectedNamesForApply, Columns...>;
+            using SelectedTypesForFunc = internal::GetColumnTypesByNames<SelectedNamesForApply, Columns...>;
+            using NamedTupleForFuncArgs = internal::ConstructNamedTuple<SelectedNamesForApply, SelectedTypesForFunc>;
+            using FuncReturnType = std::invoke_result_t<Func, NamedTupleForFuncArgs>;
+            using NewDataFrame = internal::ConstructDataFrameForApply<SelectedNamesForApply, NewColumnName, FuncReturnType, Columns...>;
+            
+            return applyImpl<NewDataFrame, NamedTupleForFuncArgs, SelectedNamesForApply::getSize()>(
+                std::forward<Func>(function),
+                SelectedColumnIndices{}
+            );
+        } 
+        else {
+            return DataFrame{};
+        }
     }
 
     // ############################################################################
@@ -140,14 +151,19 @@ public:
     template <typename SelectNames = SelectAll, typename Func>
     requires (internal::is_valid_select<SelectNames, Columns...>)
     auto query (Func&& function) {
-        using SelectedNamesForApply = internal::GetSelectNameList<SelectNames, Columns...>;
-        using SelectedColumnIndices = internal::GetColumnIndicesByNames<SelectedNamesForApply, Columns...>;
-        using SelectedTypesForFunc = internal::GetColumnTypesByNames<SelectedNamesForApply, Columns...>;
-        using NamedTupleForFuncArgs = internal::ConstructNamedTuple<SelectedNamesForApply, SelectedTypesForFunc>;
-        using FuncReturnType = std::invoke_result_t<Func, NamedTupleForFuncArgs>;
-        static_assert(std::is_same_v<FuncReturnType, bool>, "Callback return type for query() must be bool");
+        if constexpr (sizeof...(Columns) > 0) {
+            using SelectedNamesForApply = internal::GetSelectNameList<SelectNames, Columns...>;
+            using SelectedColumnIndices = internal::GetColumnIndicesByNames<SelectedNamesForApply, Columns...>;
+            using SelectedTypesForFunc = internal::GetColumnTypesByNames<SelectedNamesForApply, Columns...>;
+            using NamedTupleForFuncArgs = internal::ConstructNamedTuple<SelectedNamesForApply, SelectedTypesForFunc>;
+            using FuncReturnType = std::invoke_result_t<Func, NamedTupleForFuncArgs>;
+            static_assert(std::is_same_v<FuncReturnType, bool>, "Callback return type for query() must be bool");
 
-        return queryImpl<NamedTupleForFuncArgs>(std::forward<Func>(function), SelectedColumnIndices{}, IndicesForColumnStore{});
+            return queryImpl<NamedTupleForFuncArgs>(std::forward<Func>(function), SelectedColumnIndices{}, IndicesForColumnStore{});
+        }
+        else {
+            return DataFrame{};
+        }
     }
 
     // ############################################################################
@@ -166,16 +182,21 @@ public:
         >
     )
     auto join (const DataFrame<OtherColumns...>& df) {
-        // compute all the indices
-        using JoinIndicesSelf = internal::GetColumnIndicesByNames<internal::NameList<JoinNames...>, Columns...>;
-        using JoinIndicesOther = internal::GetColumnIndicesByNames<internal::NameList<JoinNames...>, OtherColumns...>;
-        using ColumnNamesToCopyOther = internal::NameListDifference<internal::GetColumnNames<OtherColumns...>, internal::NameList<JoinNames...>>;
-        using DataIndicesToCopyOther = internal::GetColumnIndicesByNames<ColumnNamesToCopyOther, OtherColumns...>;
+        if constexpr (sizeof...(Columns) > 0) {
+            // compute all the indices
+            using JoinIndicesSelf = internal::GetColumnIndicesByNames<internal::NameList<JoinNames...>, Columns...>;
+            using JoinIndicesOther = internal::GetColumnIndicesByNames<internal::NameList<JoinNames...>, OtherColumns...>;
+            using ColumnNamesToCopyOther = internal::NameListDifference<internal::GetColumnNames<OtherColumns...>, internal::NameList<JoinNames...>>;
+            using DataIndicesToCopyOther = internal::GetColumnIndicesByNames<ColumnNamesToCopyOther, OtherColumns...>;
 
-        using DataIndicesInResultOther = internal::IntegerSequenceByRange<sizeof...(Columns), sizeof...(Columns) + sizeof...(OtherColumns) - sizeof...(JoinNames)>;
-        using JoinedDataFrame = internal::DataFrameMerge<DataFrame, internal::GetDataFrameWithColumnsByName<ColumnNamesToCopyOther, OtherColumns...>>;
-        
-        return joinImpl<JoinType, JoinedDataFrame, JoinIndicesSelf, JoinIndicesOther, DataIndicesInResultOther, DataIndicesToCopyOther>(df);
+            using DataIndicesInResultOther = internal::IntegerSequenceByRange<sizeof...(Columns), sizeof...(Columns) + sizeof...(OtherColumns) - sizeof...(JoinNames)>;
+            using JoinedDataFrame = internal::DataFrameMerge<DataFrame, internal::GetDataFrameWithColumnsByName<ColumnNamesToCopyOther, OtherColumns...>>;
+            
+            return joinImpl<JoinType, JoinedDataFrame, JoinIndicesSelf, JoinIndicesOther, DataIndicesInResultOther, DataIndicesToCopyOther>(df);
+        }
+        else {
+            return DataFrame{};
+        }
     }
 
     // ############################################################################
@@ -183,13 +204,40 @@ public:
     // ############################################################################
     template <internal::IsGroupBySpec GroupBy, internal::IsSummarizeOp ...Ops>
     requires (internal::are_valid_summarize_ops<TypeList<Ops...>, Columns...>)
+    // ToDo group-by names are not part of summarize-ops
     auto summarize () {
-        if constexpr (not std::is_same_v<GroupBy, GroupByNone>) {
+        if constexpr (sizeof...(Columns) > 0) {
+            if constexpr (GroupBy::NumColumns == 0) {
+                using CompoundSummarizer = internal::GetCompoundSummarizer<TypeList<Ops...>, Columns...>;
+                using NewDataFrame = typename internal::GetNewColumnsForOps<TypeList<Ops...>, Columns...>::template To<DataFrame>;
+                
+                using Executer = internal::SummarizationExecuterNoGroupBy<NewDataFrame, CompoundSummarizer>;
+                Executer executer{};
+                for (std::size_t loop_index = 0; loop_index < getSize(); ++loop_index) {
+                    executer.summarize(column_store_data_, loop_index);
+                }
+                return executer.constructResult();
+            }
+            else {
+                using GroupByIndices = internal::GetColumnIndicesByNames<typename GroupBy::Names, Columns...>;
+                using GroupByTypes = typename internal::GetColumnTypesByNames<typename GroupBy::Names, Columns...>::template To<std::tuple>;
+
+                using CompoundSummarizer = internal::GetCompoundSummarizer<TypeList<Ops...>, Columns...>;
+                using DataFrameGroupBy = internal::GetDataFrameWithColumnsByName<typename GroupBy::Names, Columns...>;
+                using DataFrameOps = typename internal::GetNewColumnsForOps<TypeList<Ops...>, Columns...>::template To<DataFrame>;
+                using NewDataFrame = internal::DataFrameMerge<DataFrameGroupBy, DataFrameOps>;
+                
+                using Executer = internal::SummarizationExecuterGroupBy<NewDataFrame, GroupByIndices, GroupByTypes, CompoundSummarizer>;
+                Executer executer{};
+                for (std::size_t loop_index = 0; loop_index < getSize(); ++loop_index) {
+                    executer.summarize(column_store_data_, loop_index);
+                }
+                return executer.constructResult();
+            }
         }
         else {
-
+            return DataFrame{};
         }
-        return DataFrame{};
     }
 
     // ############################################################################
@@ -202,23 +250,28 @@ public:
         internal::are_names_in_columns<internal::NameList<SortByNames...>, Columns...>
     )
     auto sortBy () {
-        using ColumnIndices = internal::GetColumnIndicesByNames<internal::NameList<SortByNames...>, Columns...>;
-        using ElementComparison = internal::ConstructElementComparison<Order, ColumnIndices>;
-        using ColumnStoreElementComparison = internal::ColumnStoreRowComparisonProxy<ColumnStoreDataType, ElementComparison>;
+        if constexpr (sizeof...(Columns) > 0) {
+            using ColumnIndices = internal::GetColumnIndicesByNames<internal::NameList<SortByNames...>, Columns...>;
+            using ElementComparison = internal::ConstructElementComparison<Order, ColumnIndices>;
+            using ColumnStoreElementComparison = internal::ColumnStoreRowComparisonProxy<ColumnStoreDataType, ElementComparison>;
 
-        std::vector<ColumnStoreElementComparison> row_comparison_proxy {};
-        row_comparison_proxy.reserve(getSize());
-        for (std::size_t i = 0; i < getSize(); ++i) {
-            row_comparison_proxy.push_back({column_store_data_, i});
-        }
-        std::sort(row_comparison_proxy.begin(), row_comparison_proxy.end());
+            std::vector<ColumnStoreElementComparison> row_comparison_proxy {};
+            row_comparison_proxy.reserve(getSize());
+            for (std::size_t i = 0; i < getSize(); ++i) {
+                row_comparison_proxy.push_back({column_store_data_, i});
+            }
+            std::sort(row_comparison_proxy.begin(), row_comparison_proxy.end());
 
-        DataFrame result{};
-        result.assureSufficientCapacityInColumnStore(getSize(), IndicesForColumnStore{});
-        for (const auto& order : row_comparison_proxy) {
-            sortByImpl(result, order.getIndex(), IndicesForColumnStore{});
+            DataFrame result{};
+            result.assureSufficientCapacityInColumnStore(getSize(), IndicesForColumnStore{});
+            for (const auto& order : row_comparison_proxy) {
+                sortByImpl(result, order.getIndex(), IndicesForColumnStore{});
+            }
+            return result;
         }
-        return result;
+        else {
+            return DataFrame{};
+        }
     }
 
     // ############################################################################

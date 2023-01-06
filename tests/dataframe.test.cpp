@@ -240,9 +240,35 @@ TEST(DataFrame, GroupBy) {
     testdf.insert(20, 'A', 45.0, false);
     testdf.insert(20, 'A', 60.0, false);
 
-    auto summarize_sum_no_group_by = testdf.summarize<GroupByNone, Sum<"c">>();
-    auto summarize_min_group_by_single_column = testdf.summarize<GroupBy<"b">, Min<"c">>();
-    auto summarize_avg_countif_group_by_two_columns = testdf.summarize<GroupBy<"a", "b">, Min<"c">, CountIf<"d">>();
+    auto summarize_no_group_by = testdf.summarize<
+        GroupByNone,
+        Sum<"c", "c_sum">,
+        CountIf<"d", "d_true">
+    >();
+    EXPECT_EQ(summarize_no_group_by.getSize(), 1);
+    EXPECT_THAT(summarize_no_group_by.getColumn<"c_sum">(), ::testing::ElementsAre(135.0));
+    EXPECT_THAT(summarize_no_group_by.getColumn<"d_true">(), ::testing::ElementsAre(1));
+
+    auto summarize_min_group_by_single_column = testdf.summarize<
+        GroupBy<"b">,
+        Min<"c", "c_min">
+    >();
+    EXPECT_EQ(summarize_min_group_by_single_column.getSize(), 1);
+    EXPECT_THAT(summarize_min_group_by_single_column.getColumn<"b">(), ::testing::ElementsAre('A'));
+    EXPECT_THAT(summarize_min_group_by_single_column.getColumn<"c_min">(), ::testing::ElementsAre(30.0));
+
+    auto summarize_group_by_two_columns = testdf.summarize<
+        GroupBy<"a", "b">,
+        Min<"c", "c_min">,
+        CountIf<"d", "d_true">,
+        CountIfNot<"d", "d_false">
+    >();
+    EXPECT_EQ(summarize_group_by_two_columns.getSize(), 2);
+    EXPECT_THAT(summarize_group_by_two_columns.getColumn<"a">(), ::testing::ElementsAre(10, 20));
+    EXPECT_THAT(summarize_group_by_two_columns.getColumn<"b">(), ::testing::ElementsAre('A', 'A'));
+    EXPECT_THAT(summarize_group_by_two_columns.getColumn<"c_min">(), ::testing::ElementsAre(30.0, 45.0));
+    EXPECT_THAT(summarize_group_by_two_columns.getColumn<"d_true">(), ::testing::ElementsAre(1, 0));
+    EXPECT_THAT(summarize_group_by_two_columns.getColumn<"d_false">(), ::testing::ElementsAre(0, 2));
 }
 
 TEST(DataFrame, Print) {

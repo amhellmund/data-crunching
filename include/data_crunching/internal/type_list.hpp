@@ -24,6 +24,9 @@ struct TypeList {
     static constexpr std::size_t getSize() {
         return sizeof...(Types);
     }
+
+    template <template <typename ...> typename TargetType>
+    using To = TargetType<Types...>;
 };
 
 namespace internal {

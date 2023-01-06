@@ -79,49 +79,118 @@ TEST(DataFrameSummarize, SummarizerCountIfCountIfNot) {
 
 TEST(DataFrameSummarize, AreValidSummarizeOps) {
     EXPECT_TRUE((are_valid_summarize_ops<
-        TypeList<Avg<"first">, Sum<"second">, Max<"first">, Min<"second">>,
+        TypeList<Avg<"first", "first_avg">, Sum<"second", "second_sum">, Max<"first", "first_max">, Min<"second", "second_min">>,
         Column<"first", int>, Column<"second", double>
     >));
 
     EXPECT_FALSE((are_valid_summarize_ops<
-        TypeList<Avg<"first">, Sum<"second">, Max<"thrid">, Min<"second">>,
+        TypeList<Avg<"first", "first_avg">, Sum<"second", "second_sum">, Max<"thrid", "third_max">, Min<"second", "second_min">>,
         Column<"first", int>, Column<"second", double>
     >));
 }
 
 TEST(DataFrameSummarize, GetColumnForOp) {
     EXPECT_TRUE((std::is_same_v<
-        GetColumnForOp<Sum<"a">, Column<"a", int>>,
+        GetColumnForOp<Sum<"a", "a_sum">, Column<"a", int>>,
         Column<"a_sum", int>
     >));
 
     EXPECT_TRUE((std::is_same_v<
-        GetColumnForOp<Min<"a">, Column<"a", int>>,
+        GetColumnForOp<Min<"a", "a_min">, Column<"a", int>>,
         Column<"a_min", int>
     >));
 
     EXPECT_TRUE((std::is_same_v<
-        GetColumnForOp<Max<"a">, Column<"a", int>>,
+        GetColumnForOp<Max<"a", "a_max">, Column<"a", int>>,
         Column<"a_max", int>
     >));
 
     EXPECT_TRUE((std::is_same_v<
-        GetColumnForOp<Avg<"a">, Column<"a", int>>,
+        GetColumnForOp<Avg<"a", "a_avg">, Column<"a", int>>,
         Column<"a_avg", int>
     >));
 
     EXPECT_TRUE((std::is_same_v<
-        GetColumnForOp<StdDev<"a">, Column<"a", int>>,
+        GetColumnForOp<StdDev<"a", "a_stddev">, Column<"a", int>>,
         Column<"a_stddev", int>
     >));
 
     EXPECT_TRUE((std::is_same_v<
-        GetColumnForOp<CountIf<"a">, Column<"a", int>>,
+        GetColumnForOp<CountIf<"a", "a_cntif">, Column<"a", int>>,
         Column<"a_cntif", int>
     >));
 
     EXPECT_TRUE((std::is_same_v<
-        GetColumnForOp<CountIfNot<"a">, Column<"a", int>>,
+        GetColumnForOp<CountIfNot<"a", "a_cntifnot">, Column<"a", int>>,
         Column<"a_cntifnot", int>
+    >));
+}
+
+TEST(DataFrameSummarize, GetNewColumnsForOps) {
+    EXPECT_TRUE((std::is_same_v<
+        GetNewColumnsForOps<TypeList<CountIf<"a", "a_cntif">>, Column<"a", int>>,
+        TypeList<Column<"a_cntif", int>>
+    >));
+
+    EXPECT_TRUE((std::is_same_v<
+        GetNewColumnsForOps<TypeList<CountIf<"a", "a_cntif">, Max<"a", "a_max">>, Column<"a", int>>,
+        TypeList<Column<"a_cntif", int>, Column<"a_max", int>>
+    >));
+}
+
+TEST(DataFrameSummarizer, GetSummarizerForOp) {
+    EXPECT_TRUE((std::is_same_v<
+        GetSummarizerForOp<Min<"a", "a_min">, Column<"a", int>>,
+        SummarizerMin<0, int>
+    >));
+
+    EXPECT_TRUE((std::is_same_v<
+        GetSummarizerForOp<Max<"a", "a_max">, Column<"0", double>, Column<"a", float>>,
+        SummarizerMax<1, float>
+    >));
+
+    EXPECT_TRUE((std::is_same_v<
+        GetSummarizerForOp<Sum<"a", "a_sum">, Column<"0", double>, Column<"a", short>>,
+        SummarizerSum<1, short>
+    >));
+
+    EXPECT_TRUE((std::is_same_v<
+        GetSummarizerForOp<Avg<"a", "a_avg">, Column<"a", int>, Column<"0", double>>,
+        SummarizerAvg<0, int>
+    >));
+
+    EXPECT_TRUE((std::is_same_v<
+        GetSummarizerForOp<StdDev<"a", "a_stddev">, Column<"a", int>, Column<"0", double>>,
+        SummarizerStdDev<0, int>
+    >));
+
+    EXPECT_TRUE((std::is_same_v<
+        GetSummarizerForOp<CountIf<"a", "a_cntif">, Column<"a", bool>, Column<"b", float>>,
+        SummarizerCountIf<0, bool>
+    >));
+
+    EXPECT_TRUE((std::is_same_v<
+        GetSummarizerForOp<CountIfNot<"a", "a_cntifnot">, Column<"0", double>, Column<"a", bool>>,
+        SummarizerCountIfNot<1, bool>
+    >));
+}
+
+TEST(DataFrameSummarize, GetCompoundSummarizer) {
+    EXPECT_TRUE((std::is_same_v<
+        GetCompoundSummarizer<
+            TypeList<
+                Max<"b", "b_max">,
+                CountIfNot<"a", "a_cntifnot">, 
+                Avg<"c", "c_avg">
+            >,
+            Column<"a", bool>,
+            Column<"b", double>,
+            Column<"c", int>
+        >,
+        CompoundSummarizer<
+            SummarizerMax<1, double>,
+            SummarizerCountIfNot<0, bool>,
+            SummarizerAvg<2, int>
+        >
     >));
 }

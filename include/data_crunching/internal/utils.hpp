@@ -66,6 +66,21 @@ template <std::size_t NumberToPrepend, typename Sequence>
 using IntegerSequencePrepend = typename IntegerSequencePrependImpl<NumberToPrepend, Sequence>::type;
 
 // ############################################################################
+// Trait: Integer Sequence Size
+// ############################################################################
+template <typename>
+struct IntegerSequenceSizeImpl {
+};
+
+template <std::size_t ...Numbers>
+struct IntegerSequenceSizeImpl<std::integer_sequence<std::size_t, Numbers...>> {
+    static constexpr std::size_t size = sizeof...(Numbers);
+};
+
+template <typename Seq>
+constexpr std::size_t get_integer_sequence_size = IntegerSequenceSizeImpl<Seq>::size;
+
+// ############################################################################
 // Trait: Integer Sequence By Range
 // ############################################################################
 template <std::size_t LoopIndex, std::size_t EndExclusive>
