@@ -139,4 +139,10 @@ auto makeNamedTuple(FieldTypes&& ...values) {
 
 } // namespace dacr
 
+template<dacr::FixedString A>
+constexpr auto operator"" _field()
+{
+    return dacr::internal::FieldForward<A>{};
+}
+
 #endif // DATA_CRUNCHING_NAMEDTUPLE_HPP

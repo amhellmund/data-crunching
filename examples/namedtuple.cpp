@@ -14,16 +14,27 @@
 
 #include <data_crunching/namedtuple.hpp>
 
+#include <iostream>
+
+void operator"" _print(const char* str)
+{
+    std::cout << str << '\n';
+}
+
+
 int main (int argc, char*argv[]) {
     // variant A: NamedTuple definition
     using NT = dacr::NamedTuple<dacr::Field<"a", int>, dacr::Field<"d", double>>;
-    NT namedtuple1{10, 20.0};
+    NT namedtupleA{10, 20.0};
 
     // variant B: makeNamedTuple
-    auto namedtuple2 = dacr::makeNamedTuple<"a", "d">(10, 20.0);
+    auto namedtupleB = dacr::makeNamedTuple<"a", "d">(10, 20.0);
 
     // variant C: direct field initialization
-    auto namedtuple = dacr::NamedTuple(dacr_field("a") = 10, dacr_field("d") = 20.0);
+    auto namedtupleC = dacr::NamedTuple(dacr_field("a") = 10, dacr_field("d") = 20.0);
 
-    namedtuple.get<"a">() = 2.0 * namedtuple.get<"d">();
+    // variant D: direct-field initialization via custom literals (equivalent to variant C)
+    auto namedtupleD = dacr::NamedTuple("a"_field = 10, "d"_field = 20.0);
+
+    namedtupleD.get<"a">() = 2.0 * namedtupleD.get<"d">();
 }
