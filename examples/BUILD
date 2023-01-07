@@ -5,3 +5,11 @@ cc_binary(
         "//:data_crunching",
     ]
 )
+
+cc_binary(
+    name = "example_namedtuple",
+    srcs = ["namedtuple.cpp"],
+    deps = [
+        "//:data_crunching",
+    ]
+)

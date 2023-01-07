@@ -22,7 +22,11 @@
 namespace dacr {
 
 template <FixedString FieldName, typename FieldType>
-struct Field {};
+struct Field {
+    Field (FieldType&& initial_value) : value{std::forward<FieldType>(initial_value)} {}
+
+    FieldType value;
+};
 
 namespace internal {
 
@@ -79,6 +83,17 @@ struct IsFieldImpl<Field<FieldName, FieldType>> : std::true_type {};
 template <typename FieldType>
 concept IsField = IsFieldImpl<FieldType>::value;
 
+// ############################################################################
+// Concept: Field Forwarder
+// ############################################################################
+template <FixedString FieldName>
+struct FieldForward {
+    template <typename T>
+    auto operator= (T&& value) {
+        return Field<FieldName, T>{std::forward<T>(value)};
+    }
+};
+
 } // namespace internal
 
 template <internal::IsField ...Fields>
@@ -92,9 +107,12 @@ public:
     )
     NamedTuple(Types&& ...values) : data_{std::make_tuple(std::forward<Types>(values)...)} {}
 
-    template <FixedString FieldName, typename T>
-    void set(T&& value) {
-        return std::get<internal::get_field_index_by_name<FieldName, Fields...>>(data_) = std::forward<T>(value);
+    template <internal::IsField ...CtorFields>
+    NamedTuple(CtorFields&& ...fields) : data_{std::make_tuple(fields.value...)} {}
+
+    template <FixedString FieldName>
+    auto& get() {
+        return std::get<internal::get_field_index_by_name<FieldName, Fields...>>(data_);
     }
 
     template <FixedString FieldName>
@@ -103,16 +121,21 @@ public:
     }
 
 private:
-    using NamedTupleData = internal::ConvertTypeListToTuple<internal::GetTypesFromFields<Fields...>>;
+    using NamedTupleData = typename internal::GetTypesFromFields<Fields...>::template To<std::tuple>;
 
     NamedTupleData data_{};
 };
+
+template <internal::IsField ...CtorFields>
+NamedTuple(CtorFields&& ...fields) -> NamedTuple<CtorFields...>;
 
 template <FixedString ...FieldNames, typename ...FieldTypes>
 requires (sizeof...(FieldNames) == sizeof...(FieldTypes))
 auto makeNamedTuple(FieldTypes&& ...values) {
     return NamedTuple<Field<FieldNames, FieldTypes>...>(std::forward<FieldTypes>(values)...);
 }
+
+#define dacr_field(field_name) dacr::internal::FieldForward<field_name>{}
 
 } // namespace dacr
 

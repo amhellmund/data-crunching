@@ -33,9 +33,15 @@ TEST(NamedTuple, NamedTupleEnd2End) {
     EXPECT_EQ(namedtuple.get<"int">(), 10);
     EXPECT_EQ(namedtuple.get<"dbl">(), 20.0);
 
-    EXPECT_NO_THROW(namedtuple.set<"int">(100));
-    EXPECT_NO_THROW(namedtuple.set<"dbl">(200.0));
+    EXPECT_NO_THROW((namedtuple.get<"int">() = 100));
+    EXPECT_NO_THROW((namedtuple.get<"dbl">() = 200.0));
 
     EXPECT_EQ(namedtuple.get<"int">(), 100);
     EXPECT_EQ(namedtuple.get<"dbl">(), 200.0);
+}
+
+TEST(NamedTuple, NamedTupleConstructor) {
+    auto namedtuple = NamedTuple(dacr_field("int") = 10, dacr_field("dbl") = 20.0);
+    EXPECT_EQ(namedtuple.get<"int">(), 10);
+    EXPECT_EQ(namedtuple.get<"dbl">(), 20.0);
 }

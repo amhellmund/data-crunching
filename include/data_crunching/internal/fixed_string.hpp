@@ -15,6 +15,7 @@
 #ifndef DATA_CRUNCHING_INTERNAL_FIXED_STRING_HPP
 #define DATA_CRUNCHING_INTERNAL_FIXED_STRING_HPP
 
+#include <algorithm>
 #include <cstdlib>
 #include <utility>
 

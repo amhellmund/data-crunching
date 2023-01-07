@@ -119,4 +119,22 @@ This data-class offers reflection of data-members eventually.
 
     #include <data_crunching/namedtuple.hpp>
 
+    int main (int argc, char*argv[]) {
+        // variant A: NamedTuple definition
+        using NT = dacr::NamedTuple<dacr::Field<"a", int>, dacr::Field<"d", double>>;
+        NT namedtuple1{10, 20.0};
+
+        // variant B: makeNamedTuple
+        auto namedtuple2 = dacr::makeNamedTuple<"a", "d">(10, 20.0);
+
+        // variant C: direct field initialization
+        auto namedtuple = dacr::NamedTuple(dacr_field("a") = 10, dacr_field("d") = 20.0);
+
+        namedtuple.get<"a">() = 2.0 * namedtuple.get<"d">();
+    }
+
+# Contributions
+
+If you are interested in the *data crunching* library, help is always appreciated by giving feedback, testing code in other development environments or implementing new features. 
+
     
