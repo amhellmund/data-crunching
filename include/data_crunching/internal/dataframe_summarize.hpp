@@ -106,6 +106,8 @@ concept IsSummarizeOp = IsSummarizeOpImpl<T>::value;
 template <std::size_t InIndex, IsArithmetic T>
 class SummarizerSum {
 public:
+    using TargetType = T;
+
     template <typename DataIn>
     void summarize (const DataIn& in, std::size_t index) {
         sum_ += std::get<InIndex>(in)[index];
@@ -122,6 +124,8 @@ private:
 template <std::size_t InIndex, IsArithmetic T>
 class SummarizerAvg {
 public:   
+    using TargetType = double;
+
     template <typename DataIn>
     void summarize (const DataIn& in, std::size_t index) {
         current_count_ += 1;
@@ -140,6 +144,8 @@ private:
 template <std::size_t InIndex, IsArithmetic T>
 class SummarizerStdDev {
 public:
+    using TargetType = double;
+
     template <typename DataIn>
     void summarize (const DataIn& in, std::size_t index) {
         current_count_ += 1;
@@ -167,6 +173,8 @@ private:
 template <std::size_t InIndex, IsArithmetic T>
 class SummarizerMin {
 public:
+    using TargetType = T;
+
     template <typename DataIn>
     void summarize (const DataIn& in, std::size_t index) {
         if (std::get<InIndex>(in)[index] < min_value_) {
@@ -185,6 +193,8 @@ private:
 template <std::size_t InIndex, IsArithmetic T>
 class SummarizerMax {
 public:
+    using TargetType = T;
+
     template <typename DataIn>
     void summarize (const DataIn& in, std::size_t index) {
         if (std::get<InIndex>(in)[index] > max_value_) {
@@ -204,6 +214,8 @@ template <std::size_t InIndex, typename T>
 requires (std::is_same_v<T, bool>)
 class SummarizerCountIf {
 public:
+    using TargetType = int;
+
     template <typename DataIn>
     void summarize (const DataIn& in, std::size_t index) {
         if (std::get<InIndex>(in)[index] == true) {
@@ -223,6 +235,8 @@ template <std::size_t InIndex, typename T>
 requires (std::is_same_v<T, bool>)
 class SummarizerCountIfNot {
 public:
+    using TargetType = int;
+
     template <typename DataIn>
     void summarize (const DataIn& in, std::size_t index) {
         if (std::get<InIndex>(in)[index] == false) {
@@ -252,40 +266,6 @@ struct AreValidSummarizeOpsImpl<TypeList<Op<ColumnName, NewColumnName>, RestOps.
 
 template <typename Ops, typename ...Columns>
 constexpr bool are_valid_summarize_ops = AreValidSummarizeOpsImpl<Ops, Columns...>::value;
-
-
-// ############################################################################
-// Trait: GetColumnForOp
-// ############################################################################
-template <typename, typename ...>
-struct GetColumnForOpImpl {};
-
-template <template <FixedString, FixedString> typename Op, FixedString ColumnName, FixedString NewColumnName, typename ...Columns>
-struct GetColumnForOpImpl<Op<ColumnName, NewColumnName>, Columns...> {
-    using type = Column<NewColumnName, GetColumnTypeByName<ColumnName, Columns...>>;
-};
-
-template <typename Op, typename ...Columns>
-using GetColumnForOp = typename GetColumnForOpImpl<Op, Columns...>::type;
-
-// ############################################################################
-// Trait: GetNewColumnsForOps
-// ############################################################################
-template <typename ...>
-struct GetNewColumnsForOpsImpl {
-    using type = TypeList<>;
-};
-
-template <typename FirstOp, typename ...RestOps, typename ...Columns>
-struct GetNewColumnsForOpsImpl<TypeList<FirstOp, RestOps...>, Columns...> {
-    using type = TypeListPrepend<
-        GetColumnForOp<FirstOp, Columns...>,
-        typename GetNewColumnsForOpsImpl<TypeList<RestOps...>, Columns...>::type
-    >;
-};
-
-template <typename Ops, typename ...Columns>
-using GetNewColumnsForOps = typename GetNewColumnsForOpsImpl<Ops, Columns...>::type;
 
 // ############################################################################
 // Trait: Compound Summarizer
@@ -362,8 +342,42 @@ struct GetSummarizerForOpImpl<CountIfNot<ColumnName, NewColumnName>, Columns...>
     using type = SummarizerCountIfNot<get_column_index_by_name<ColumnName, Columns...>, GetColumnTypeByName<ColumnName, Columns...>>;
 };
 
+template <typename Op, typename ...Columns>
+using GetSummarizerForOp = typename GetSummarizerForOpImpl<Op, Columns...>::type;
+
+// ############################################################################
+// Trait: GetColumnForOp
+// ############################################################################
+template <typename, typename ...>
+struct GetColumnForOpImpl {};
+
+template <template <FixedString, FixedString> typename Op, FixedString ColumnName, FixedString NewColumnName, typename ...Columns>
+struct GetColumnForOpImpl<Op<ColumnName, NewColumnName>, Columns...> {
+    using type = Column<NewColumnName, typename GetSummarizerForOp<Op<ColumnName, NewColumnName>, Columns...>::TargetType>;
+};
+
+template <typename Op, typename ...Columns>
+using GetColumnForOp = typename GetColumnForOpImpl<Op, Columns...>::type;
+
+
+// ############################################################################
+// Trait: GetNewColumnsForOps
+// ############################################################################
+template <typename ...>
+struct GetNewColumnsForOpsImpl {
+    using type = TypeList<>;
+};
+
+template <typename FirstOp, typename ...RestOps, typename ...Columns>
+struct GetNewColumnsForOpsImpl<TypeList<FirstOp, RestOps...>, Columns...> {
+    using type = TypeListPrepend<
+        GetColumnForOp<FirstOp, Columns...>,
+        typename GetNewColumnsForOpsImpl<TypeList<RestOps...>, Columns...>::type
+    >;
+};
+
 template <typename Ops, typename ...Columns>
-using GetSummarizerForOp = typename GetSummarizerForOpImpl<Ops, Columns...>::type;
+using GetNewColumnsForOps = typename GetNewColumnsForOpsImpl<Ops, Columns...>::type;
 
 
 // ############################################################################
