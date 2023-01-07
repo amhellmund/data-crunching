@@ -6,29 +6,39 @@ The goal of this project is to provide a type-aware and type-safe data crunching
 
 > **DISCLAIMER:**
 The project is currently in a proof-of-concept phase to elaborate on the usefullness of type-aware data crunching APIs and the chosen syntax.
-Therefore, some of the features are partly implemented or with limited checks on the input arguments (see Limitations for details). 
+Therefore, some of the features are partly implemented or with limited checks on the input arguments (see Limitations for details).
 
-# DataFrame
+# Compatibility
 
-The core API of the *data crunching (dacr)* library for C++ is the `DataFrame` which is an in-memory column-store database with efficient memory layout.
-The `DataFrame` allows to:
+The _data crunching_ library is known to compile in the following development environment:
+
+- GNU/Linux (Ubuntu)
+- Bazel 5.3.2
+- clang++ 15.0.4
+- libc++ 15.0.4
+
+# Core APIs
+
+The _data crunching_ currently provides these core APIs:
+
+- `DataFrame`: a column-store in-memory database for data analysis
+- `NamedTuple`: a data class combining structural definition with reflection
+
+## DataFrame
+
+The `DataFrame` is an in-memory column-store database with column-wise contiguous memory layout.
+It uses some of the latest C++ standard features to assure (type-)correctness of operations at compile-time
+following the principle: *"The code is correct without semantic failures at runtime"*.
+For example, the code checks for every operations that selected columns do exist or it disallows operations for incorrect data types (e.g. standard deviation for string-based data).
+
+Feature-wise, the `DataFrame` provides:
 
 - query rows by user-defined functions
 - summarize columns by statistical functions including group-by functionality across multiple columns
 - join `DataFrame`s across unique column names
 - sort rows across multiple columns
 
-The `DataFrame` API uses some of the latest C++ standard features to assure type-correctness of operations at compile-time, for example to disallow computing the standard deviation for string-based columns.
-
-## Further APIs
-
-Complementary features to enrich the `DataFrame` API, e.g. to read CSV files into `DataFrames` are also made public. This includes among others:
-
-- `NamedTuple` to define and access tuples by name instead of by type or id (like for `std::tuple`).
-- Type-aware `split` function for `string` and `string_view` to convert split parts into types directly.
-- Range adaptors for numeric `sequence`s and text-based file streams to allow using the C++20 ranges library for such activities.
-
-# Example
+### Example
 
 The below code exemplifies how to use the `DataFrame` class to perform data crunching.
 
@@ -96,3 +106,17 @@ The below code exemplifies how to use the `DataFrame` class to perform data crun
             .string_width = 20,
         });
     }
+
+
+## NamedTuple
+
+The `NamedTuple` is a data-class (like `std::tuple`) with string-based read/write accesss to data fields.
+Unlike `std::tuple`, each data field has a unique name thereby combining structural definition of data with reflection of its members.
+As of `C++20` (and probably `C++23`), C++ does not support reflection of class members.
+This data-class offers reflection of data-members eventually.
+
+### Example
+
+    #include <data_crunching/namedtuple.hpp>
+
+    
