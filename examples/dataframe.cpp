@@ -52,27 +52,40 @@ auto getCityData() {
 }
 
 int main (int argc, char *argv[]) {
+    // load the data
     auto df_person = getPersonData(); 
+
+    // create a new column with a computed value
     auto df_bmi = df_person.apply<"bmi">([](dacr_param) { 
         return (
             static_cast<double>(dacr_value("weight_in_kg")) / 
             (dacr_value("size_in_m") * dacr_value("size_in_m"))
         );
     });
-    auto df_bmi_below_60 = df_bmi.query([](dacr_param) {
+
+    // filter rows by custom lambda function
+    auto df_bmi_for_below_60_years = df_bmi.query([](dacr_param) {
         return dacr_value("age") < 60;
     });
     
-    auto df_city = getCityData();  
-    auto df_join_with_city = df_bmi_below_60.join<dacr::Join::Inner, "city">(df_city);
+    // load second dataset
+    auto df_city = getCityData();
+
+    // join the two dataframes to a single data frame
+    auto df_join_with_city = df_bmi_for_below_60_years.join<dacr::Join::Inner, "city">(df_city);
+
+    // compute summarizations with group-by
     auto df_summarize = df_join_with_city.summarize<
         dacr::GroupBy<"country">,
         dacr::Avg<"bmi", "bmi_avg">
     >();
 
+    // sort the dataframe
     auto df_summarize_sorted = df_summarize.sortBy<dacr::SortOrder::Ascending, "country">();
 
+    // print the dataframe
     df_summarize_sorted.print({
+        .fixedpoint_precision = 4,
         .string_width = 20,
     });
 }
