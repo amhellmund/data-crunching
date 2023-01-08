@@ -1,4 +1,5 @@
 theme: minima
+
 header_pages:
   - api/dataframe.md
   - api/namedtuple.md
