@@ -161,6 +161,24 @@ This data-class offers reflection of data-members eventually.
         namedtupleD.get<"a">() = 2.0 * namedtupleD.get<"d">();
     }
 
+# Roadmap
+
+Various new features are planned to be implemented for the *data crunching* library:
+
+- Loading `DataFrame` from commonly known file formats (e.g. csv, json, yaml, etc.)
+- `DataSeries` class to perform commonly known statistic operations on data series (e.g. histogram, percentiles, etc.)
+- Type-aware `split`ing of strings
+- Various `range`-based extensions (e.g. range-based line-wise file reader)
+
+# Limitations
+
+As stated by the disclaimer on the top of the page, this project is in an early development phase.
+The provided APIs have been tested with plain data types only.
+Reference types might work depending on the use cases.
+In addition, the code has only been tested so far on a single Linux-based platform with a fairly modern
+clang-based development environment.
+Other development environments might or might not work currently.
+
 # Contributions
 
 If you are interested in the *data crunching* library, help is always appreciated by giving feedback, testing code in other development environments or implementing new features. 
