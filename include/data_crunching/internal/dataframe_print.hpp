@@ -40,18 +40,18 @@ struct PrintOptions {
 
 namespace internal {
 
-static constexpr std::size_t MIN_COLUMN_WIDTH = 3;
-
 template <typename Alignment>
-static void printString(std::ostream& stream, std::string_view str, int width) {
+static void formatStringWithWidthAndAlignment(std::ostream& stream, std::string_view str, int width, Alignment alignment) {
+    static constexpr std::size_t MIN_COLUMN_WIDTH_TO_SHOW_DOTS = 3;
+    
     if (str.size() <= width) {
         stream << std::setw(width) << alignment << str; 
     }
-    else if (width > MIN_COLUMN_WIDTH) {
+    else if (width > MIN_COLUMN_WIDTH_TO_SHOW_DOTS) {
         stream << str.substr(0, width - 2) << std::string(2, '.');
     }
     else {
-        stream << str.substr(0, MIN_COLUMN_WIDTH);
+        stream << str.substr(0, MIN_COLUMN_WIDTH_TO_SHOW_DOTS);
     }
 }
 
@@ -68,12 +68,10 @@ struct DataFormatter {
         return print_options.custom_width;
     }
 
-    static void format(std::ostream& stream, const T& value, const PrintOptions&) {
-        stream << getAlignment() << value;
-    }
-
-    static void formatHeader(std::ostream& stream, const char* header, const PrintOptions&) {
-        
+    static void format(std::ostream& stream, const T& value, const PrintOptions&print_options) {
+        std::stringstream sstr;
+        sstr << value;
+        formatStringWithWidthAndAlignment(stream, sstr.str(), getWidth(print_options), getAlignment());
     }
 };
 
@@ -119,7 +117,7 @@ struct DataFormatter<bool> {
     }
     
     static void format(std::ostream& stream, bool value, const PrintOptions& print_options) {
-        stream << std::setw(getWidth(print_options)) << std::boolalpha << value;
+        stream << std::setw(getWidth(print_options)) << std::boolalpha << getAlignment() << value;
     }
 };
 
@@ -133,8 +131,10 @@ struct DataFormatter<std::string> {
         return print_options.string_width;
     }
     
-    static void format(std::ostream& stream, const std::string& value, const PrintOptions&) {
-        stream << getAlignment() << value;
+    static void format(std::ostream& stream, const std::string& value, const PrintOptions& print_options) {
+        std::stringstream sstr;
+        sstr << value;
+        formatStringWithWidthAndAlignment(stream, sstr.str(), getWidth(print_options), getAlignment());
     }    
 };
 
@@ -146,26 +146,25 @@ template <FixedString ColumnName, typename ColumnType, std::size_t DataIndex>
 class ColumnPrinter {
 public:
     static void printHeader(std::ostream& stream, const PrintOptions& print_options) {
-        printString(stream, ColumnName.data, getWidth(print_options));
+        formatStringWithWidthAndAlignment(
+            stream,
+            ColumnName.data,
+            Formatter::getWidth(print_options),
+            Formatter::getAlignment()
+        );
     }
 
     static void printLineSeparator(std::ostream& stream, const PrintOptions& print_options) {
-        stream << std::string(getWidth(print_options), '-');
+        stream << std::string(Formatter::getWidth(print_options), '-');
     }
 
     template <typename ColumnStoreData>
     static void printData(std::ostream& stream, const PrintOptions& print_options, const ColumnStoreData& column_store_data, std::size_t row_index) {
-        std::stringstream sstr;
-        DataFormatter<ColumnType>::format(sstr, std::get<DataIndex>(column_store_data)[row_index], print_options);
-        printString(stream, sstr.str(), getWidth(print_options));
-    }
-
-    static int getWidth(const PrintOptions& printOptions) {
-        return std::max<int>(DataFormatter<ColumnType>::getWidth(printOptions), MIN_COLUMN_WIDTH);
+        DataFormatter<ColumnType>::format(stream, std::get<DataIndex>(column_store_data)[row_index], print_options);
     }
 
 private:
-    
+    using Formatter = DataFormatter<ColumnType>;
 };
 
 class RowStartPrinter {

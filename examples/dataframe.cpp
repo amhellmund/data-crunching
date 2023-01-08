@@ -51,11 +51,6 @@ auto getCityData() {
     return df;
 }
 
-template <typename T>
-void printType (T&&) {
-    std::cout << __PRETTY_FUNCTION__ << "\n";
-}
-
 int main (int argc, char *argv[]) {
     // load the data
     auto df_person = getPersonData(); 
@@ -90,6 +85,7 @@ int main (int argc, char *argv[]) {
 
     // print the dataframe
     df_summarize_sorted.print({
+        .fixedpoint_precision = 4,
         .string_width = 20,
     });
 }
