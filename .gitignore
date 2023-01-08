@@ -33,3 +33,6 @@
 
 # Bazel
 bazel-*
+
+# VS Code
+.vscode
