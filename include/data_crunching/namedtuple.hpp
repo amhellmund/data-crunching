@@ -139,6 +139,7 @@ auto makeNamedTuple(FieldTypes&& ...values) {
 
 } // namespace dacr
 
+// Inspired by MeetingC++ Talk: https://krzysztof-jusiak.github.io/talks/++namedtuple/index-meetingcpp.html
 template<dacr::FixedString A>
 constexpr auto operator"" _field()
 {
