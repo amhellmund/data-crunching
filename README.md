@@ -17,6 +17,11 @@ The _data crunching_ library is known to compile in the following development en
 - clang++ 15.0.4
 - libc++ 15.0.4
 
+# Documentation
+
+The full documentation for the _data crunching_ API is available [here](https://amhellmund.github.io/data_crunching/).
+Below is a short description of the core APIs with minimal examples get a sneak preview of what is provided.
+
 # Core APIs
 
 The _data crunching_ currently provides these core APIs:
