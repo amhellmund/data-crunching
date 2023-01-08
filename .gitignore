@@ -36,3 +36,7 @@ bazel-*
 
 # VS Code
 .vscode
+
+# Jeky
+Gemfile
+Gemfile.lock
