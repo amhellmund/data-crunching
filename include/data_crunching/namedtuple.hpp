@@ -18,6 +18,7 @@
 #include "data_crunching/internal/fixed_string.hpp"
 #include "data_crunching/internal/type_list.hpp"
 #include "data_crunching/internal/utils.hpp"
+#include "data_crunching/internal/name_list.hpp"
 
 namespace dacr {
 
@@ -48,6 +49,25 @@ struct GetTypesFromFieldsImpl<Field<FirstFieldName, FirstFieldType>, RestFields.
 
 template <typename ...Fields>
 using GetTypesFromFields = typename GetTypesFromFieldsImpl<Fields...>::type;
+
+// ############################################################################
+// Trait: Get Names From Fields
+// ############################################################################
+template <typename ...>
+struct GetNamesFromFieldsImpl {
+    using type = NameList<>;
+};
+
+template <FixedString FirstFieldName, typename FirstFieldType, typename ...RestFields>
+struct GetNamesFromFieldsImpl<Field<FirstFieldName, FirstFieldType>, RestFields...> {
+    using type = internal::NameListPrepend<
+        FirstFieldName,
+        typename GetNamesFromFieldsImpl<RestFields...>::type
+    >;
+};
+
+template <typename ...Fields>
+using GetNamesFromFields = typename GetNamesFromFieldsImpl<Fields...>::type;
 
 // ############################################################################
 // Concept: Get Index By Name
@@ -97,7 +117,10 @@ struct FieldForward {
 } // namespace internal
 
 template <internal::IsField ...Fields>
-requires (sizeof...(Fields) > 0)
+requires (
+    sizeof...(Fields) > 0 &&
+    internal::are_names_unique<internal::GetNamesFromFields<Fields...>>
+)
 class NamedTuple {
 public:
     template <typename ...Types>
@@ -129,21 +152,17 @@ private:
 template <internal::IsField ...CtorFields>
 NamedTuple(CtorFields&& ...fields) -> NamedTuple<CtorFields...>;
 
-template <FixedString ...FieldNames, typename ...FieldTypes>
-requires (sizeof...(FieldNames) == sizeof...(FieldTypes))
-auto makeNamedTuple(FieldTypes&& ...values) {
-    return NamedTuple<Field<FieldNames, FieldTypes>...>(std::forward<FieldTypes>(values)...);
-}
-
 #define dacr_field(field_name) dacr::internal::FieldForward<field_name>{}
 
 } // namespace dacr
 
+#if !defined(DACR_DISABLE_FIELD_LITERAL)
 // Inspired by MeetingC++ Talk: https://krzysztof-jusiak.github.io/talks/++namedtuple/index-meetingcpp.html
 template<dacr::FixedString A>
 constexpr auto operator"" _field()
 {
     return dacr::internal::FieldForward<A>{};
 }
+#endif // DACR_DISABLE_FIELD_LITERAL
 
 #endif // DATA_CRUNCHING_NAMEDTUPLE_HPP
