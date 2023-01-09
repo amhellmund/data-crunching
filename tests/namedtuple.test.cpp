@@ -21,10 +21,10 @@
 
 using dacr::Field;
 using dacr::NamedTuple;
-using dacr::makeNamedTuple;
+using dacr::internal::GetNamesFromFields;
 
-TEST(NamedTuple, NamedTupleEnd2End) {
-    auto namedtuple = makeNamedTuple<"int", "dbl">(10, 20.0);
+TEST(NamedTuple, NamedTupleConstructionUsingFieldLiterals) {
+    auto namedtuple = NamedTuple("int"_field = 10, "dbl"_field = 20.0);
     EXPECT_TRUE((std::is_same_v<
         decltype(namedtuple),
         NamedTuple<Field<"int", int>, Field<"dbl", double>>
@@ -40,8 +40,14 @@ TEST(NamedTuple, NamedTupleEnd2End) {
     EXPECT_EQ(namedtuple.get<"dbl">(), 200.0);
 }
 
-TEST(NamedTuple, NamedTupleConstructor) {
+TEST(NamedTuple, NamedTupleConstructionDacrField) {
     auto namedtuple = NamedTuple(dacr_field("int") = 10, dacr_field("dbl") = 20.0);
+    EXPECT_EQ(namedtuple.get<"int">(), 10);
+    EXPECT_EQ(namedtuple.get<"dbl">(), 20.0);
+}
+
+TEST(NamedTuple, NamedTupleConstructionExplicit) {
+    NamedTuple<dacr::Field<"int", int>, dacr::Field<"dbl", double>> namedtuple{10, 20.0};
     EXPECT_EQ(namedtuple.get<"int">(), 10);
     EXPECT_EQ(namedtuple.get<"dbl">(), 20.0);
 }
