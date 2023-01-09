@@ -61,3 +61,14 @@ auto x = point.get<"x">();
 
 point.get<"x">() = 2.0;
 ```
+
+## Structured Bindings
+
+Structured bindings may be used for `NamedTuple` at the moment using the member function `toStdTuple`.
+This function returns an instance-qualified (const or non-const) reference of the underlying `std::tuple`.
+
+```cpp
+auto& [x, y, z] = point.toStdTuple();
+
+const auto& [x, y, z] = point.toStdTuple();
+```

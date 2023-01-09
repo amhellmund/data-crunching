@@ -25,5 +25,10 @@ int main (int argc, char*argv[]) {
     // variant 3: direct-field initialization via custom literals
     auto namedtuple3 = dacr::NamedTuple("a"_field = 10, "d"_field = 20.0);
 
+    // access to members
     namedtuple3.get<"a">() = 2.0 * namedtuple3.get<"d">();
+
+    // strutured bindings
+    auto& [a, d] = namedtuple3.toStdTuple();
+    a = 2.0 * d;
 }

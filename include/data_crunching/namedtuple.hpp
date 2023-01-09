@@ -143,6 +143,14 @@ public:
         return std::get<internal::get_field_index_by_name<FieldName, Fields...>>(data_);
     }
 
+    auto& toStdTuple () {
+        return data_;
+    }
+
+    const auto toStdTuple () const {
+        return data_;
+    }
+
 private:
     using NamedTupleData = typename internal::GetTypesFromFields<Fields...>::template To<std::tuple>;
 

@@ -51,3 +51,19 @@ TEST(NamedTuple, NamedTupleConstructionExplicit) {
     EXPECT_EQ(namedtuple.get<"int">(), 10);
     EXPECT_EQ(namedtuple.get<"dbl">(), 20.0);
 }
+
+TEST(NamedTuple, NamedTupleUnpack) {
+    auto namedtuple = NamedTuple("x"_field = 10, "y"_field = 20.0);
+    auto [x, y] = namedtuple.toStdTuple();
+
+    EXPECT_EQ(x, 10);
+    x = 20;
+    EXPECT_EQ(namedtuple.get<"x">(), 10);
+    
+    EXPECT_DOUBLE_EQ(y, 20.0);
+
+    auto &[xref, yref] = namedtuple.toStdTuple();
+    EXPECT_EQ(x, 10);
+    x = 20;
+    EXPECT_EQ(namedtuple.get<"x">(), 20);
+}
