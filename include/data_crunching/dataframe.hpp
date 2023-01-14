@@ -75,10 +75,11 @@ public:
         sizeof...(Ranges) == sizeof...(Columns) && 
         internal::is_convertible_to<internal::ExtractValueTypesFromRanges<Ranges...>, internal::GetColumnTypes<Columns...>>
     )
-    void insertRanges (Ranges&& ...ranges) {
+    std::size_t insertRanges (Ranges&& ...ranges) {
         const std::size_t min_size = internal::getMinSizeFromRanges(std::forward<Ranges>(ranges)...);
         assureSufficientCapacityInColumnStore(min_size, IndicesForColumnStore{});
         internal::insertRangesIntoContainers(column_store_data_, IndicesForColumnStore{}, min_size, std::forward<Ranges>(ranges)...);
+        return insertRanges;
     }
 
     // ############################################################################
