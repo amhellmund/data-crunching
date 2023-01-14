@@ -8,15 +8,6 @@ has_toc: true
 
 # NamedTuple
 
-<details open markdown="block">
-  <summary>
-    Table of contents
-  </summary>
-  {: .text-delta }
-1. TOC
-{:toc}
-</details>
-
 The class `NamedTuple` is a data class (like a struct or `std::tuple`) with string-based read/write access to members.
 A `NamedTuple` is built from a list of `Field`s each having a `name` and a `type`:
 

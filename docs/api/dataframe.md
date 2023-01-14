@@ -8,15 +8,6 @@ has_toc: true
 
 # DataFrame
 
-<details open markdown="block">
-  <summary>
-    Table of contents
-  </summary>
-  {: .text-delta }
-1. TOC
-{:toc}
-</details>
-
 The class `DataFrame` is an in-memory data storage providing essential operations for data processing, filtering and analysis.
 A `DataFrame` is composed of a set of columns with each column having a `name` and a `type`:
 
