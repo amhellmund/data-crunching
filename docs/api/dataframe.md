@@ -7,7 +7,15 @@ has_toc: true
 ---
 
 # DataFrame
+
+<details open markdown="block">
+  <summary>
+    Table of contents
+  </summary>
+  {: .text-delta }
+1. TOC
 {:toc}
+</details>
 
 The class `DataFrame` is an in-memory data storage providing essential operations for data processing, filtering and analysis.
 A `DataFrame` is composed of a set of columns with each column having a `name` and a `type`:
@@ -43,7 +51,6 @@ Instead all operations of the `DataFrame` perform copies of the data.
 Future versions will optimize the data access to reduce data copies.
 
 ## Construction
-{:toc}
 
 A default constructor is provided with any special functionality.
 
@@ -56,7 +63,6 @@ DataFrame df {};
 ```
 
 ## Insertion
-{:toc}
 
 Column data is inserted into the `DataFrame` by either using `insert` or `insert_ranges`.
 
@@ -102,7 +108,6 @@ df.insert_ranges(range_a, range_b, range_c); // only two elements are inserted f
 ```
 
 ## Column Filter
-{:toc}
 
 ```cpp
 template <FixedString ...SelectNames>
@@ -125,7 +130,6 @@ auto df_select = df.select<"a">();
 ```
 
 ## Row Filter
-{:toc}
 
 ```cpp
 template <typename SelectNames = SelectAll, typename Func>
@@ -183,7 +187,6 @@ auto df_query = df.query<dacr::Select<"a">>([](dacr_param) {
 ```
 
 ## Column Extension
-{:toc}
 
 ```cpp
 template <FixedString NewColumnName, typename SelectNames = SelectAll, typename Func>
@@ -223,7 +226,6 @@ auto df_apply = df.apply<dacr::Select<"a">>([](dacr_param) {
 ```
 
 ## Join Operation
-{:toc}
 
 ```cpp
 template <Join JoinType, FixedString ...JoinNames, typename OtherDataFrame>
@@ -267,7 +269,6 @@ auto df_joined = df1.join<dacr::Join::Inner, "id1", "id2">(df2);
 ```
 
 ## Aggregation
-{:toc}
 
 ```cpp
 template <typename GroupBySpec, typename ...Operations>
@@ -326,7 +327,6 @@ auto df_summarize = df.summarize<
 ```
 
 ## Sorting
-{:toc}
 
 ```cpp
 template <SortOrder Order, FixedString ...SortByNames>
@@ -356,7 +356,6 @@ auto df_sorted = df.sortBy<dacr::SortOrder::Ascending, "a", "b">();
 ```
 
 ## Appending
-{:toc}
 
 ```cpp
 DataFrame append (const DataFrame& other);
@@ -375,7 +374,6 @@ auto df_append = df1.append(df2);
 ```
 
 ## Printing
-{:toc}
 
 ```cpp
 void print (const dacr::PrintOptions& print_options, std::ostream& stream = std::cout);
@@ -410,7 +408,6 @@ df.print({
 This is due to the language rules for aggregate initialization of structs.
 
 ## Raw Data Access
-{:toc}
 
 ### Size of DataFrame
 
