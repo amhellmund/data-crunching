@@ -21,6 +21,7 @@ Each `name` must not be empty.
 
 
 ## Construction
+{:toc}
 
 The `NamedTuple` type may be constructed with explicit types or via Class-Template-Argument-Deduction (CTAD) of the constructor using initial values.
 
@@ -53,6 +54,7 @@ auto point3d_by_field_macro = dacr::NamedTuple(dacr_field("x") = 1.0, dacr_field
 ```
 
 ## Member Access
+{:toc}
 
 The members of the `NamedTuple` may be accessed for read and write by the `get` template function:
 
@@ -63,6 +65,7 @@ point.get<"x">() = 2.0;
 ```
 
 ## Structured Bindings
+{:toc}
 
 Structured bindings may be used for `NamedTuple` at the moment using the member function `toStdTuple`.
 This function returns an instance-qualified (const or non-const) reference of the underlying `std::tuple`.
