@@ -79,7 +79,7 @@ public:
         const std::size_t min_size = internal::getMinSizeFromRanges(std::forward<Ranges>(ranges)...);
         assureSufficientCapacityInColumnStore(min_size, IndicesForColumnStore{});
         internal::insertRangesIntoContainers(column_store_data_, IndicesForColumnStore{}, min_size, std::forward<Ranges>(ranges)...);
-        return insertRanges;
+        return min_size;
     }
 
     // ############################################################################
