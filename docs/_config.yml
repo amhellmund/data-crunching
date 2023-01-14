@@ -1,7 +1,6 @@
 title: Data Crunching
 description: A data analysis and processing library for modern C++
 remote_theme: just-the-docs/just-the-docs
-markdown: kramdown
 
 url: https://amhellmund.github.io/data_crunching/
 
