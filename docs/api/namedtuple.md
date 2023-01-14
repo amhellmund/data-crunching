@@ -6,6 +6,7 @@ nav_order: 2
 ---
 
 # NamedTuple
+{:toc}
 
 The class `NamedTuple` is a data class (like a struct or `std::tuple`) with string-based read/write access to members.
 A `NamedTuple` is built from a list of `Field`s each having a `name` and a `type`:
