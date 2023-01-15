@@ -398,6 +398,14 @@ df.print({
 **Important**: the print options must be specified in the order of the table if multiple parameters are set at once.
 This is due to the language rules for aggregate initialization of structs.
 
+### Print Selected Columns
+
+An additional `dacr::Select` may be specified to print selected columns only.
+
+```cpp
+df.print<dacr::Select<"a">>();
+```
+
 ## Raw Data Access
 
 ### Size of DataFrame
