@@ -5,6 +5,10 @@ on:
   workflow-dispatch:
   pull-request:
     types: [opened, reopend, synchronized]
+  push:
+    branches:
+      - 'main'
+      - 'develop'
 
 jobs:
   run-build-and-test:
