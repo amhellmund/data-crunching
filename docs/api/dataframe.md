@@ -9,7 +9,9 @@ nav_order: 2
 {:toc}
 
 The class `DataFrame` is an in-memory data storage providing essential operations for data processing, filtering and analysis.
-A `DataFrame` is composed of a set of columns with each column having a `name` and a `type`:
+A `DataFrame` is composed of a set of columns with each column having a `name` and a `type`.
+The `type` must be a plain data type, i.e. no reference or cv-qualified type.
+Custom data types however are supported if they are default, move and copy constructible.
 
 ```cpp
 using Column = dacr::Column<"name", type>;
