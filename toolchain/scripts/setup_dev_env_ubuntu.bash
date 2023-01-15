@@ -7,6 +7,9 @@ sudo apt install g++ unzip zip
 wget -P /tmp/ https://apt.llvm.org/llvm.sh
 chmod +x /tmp/llvm.sh
 sudo /tmp/llvm.sh 15 all
+sudo update-alternatives --install /usr/bin/clang++-15 clang++ /usr/bin/clang++ 10
+sudo update-alternatives --install /usr/bin/clang-format-15 clang-format /usr/bin/clang-format 10
+sudo update-alternatives --install /usr/bin/clang-tidy-15 clang-tidy /usr/bin/clang-tidy 10
 
 # Install Bazel 6.0.0
 wget -P /tmp/ https://github.com/bazelbuild/bazel/releases/download/6.0.0/bazel-6.0.0-installer-linux-x86_64.sh
