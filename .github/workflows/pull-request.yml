@@ -8,4 +8,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - run: bash ./toolchain/scripts/setup_dev_env.bash
+      - run: bash ./toolchain/scripts/setup_dev_env_ubuntu.bash
+      - run: bazel build //...
+      - run: bazel test //...

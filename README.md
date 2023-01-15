@@ -13,7 +13,7 @@ Therefore, some of the features are partly implemented or with limited checks on
 The _data crunching_ library is known to compile in the following development environment:
 
 - GNU/Linux (Ubuntu)
-- Bazel 5.3.2
+- Bazel 6.0.0
 - clang++ 15.0.4
 - libc++ 15.0.4
 
