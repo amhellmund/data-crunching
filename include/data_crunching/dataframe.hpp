@@ -251,7 +251,7 @@ public:
         internal::are_names_unique<internal::NameList<SortByNames...>> &&
         internal::are_names_in_columns<internal::NameList<SortByNames...>, Columns...>
     )
-    auto sortBy () {
+    auto sort () {
         if constexpr (sizeof...(Columns) > 0) {
             using ColumnIndices = internal::GetColumnIndicesByNames<internal::NameList<SortByNames...>, Columns...>;
             using ElementComparison = internal::ConstructElementComparison<Order, ColumnIndices>;

@@ -27,8 +27,4 @@ int main (int argc, char*argv[]) {
 
     // access to members
     namedtuple3.get<"a">() = 2.0 * namedtuple3.get<"d">();
-
-    // strutured bindings
-    auto& [a, d] = namedtuple3.toStdTuple();
-    a = 2.0 * d;
 }

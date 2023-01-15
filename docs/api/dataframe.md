@@ -321,7 +321,7 @@ auto df_summarize = df.summarize<
 
 ```cpp
 template <SortOrder Order, FixedString ...SortByNames>
-DataFrame sortBy ();
+DataFrame sort ();
 ```
 
 The function `sortBy` sorts the `DataFrame` row-wise by multiple columns.
@@ -343,7 +343,7 @@ using DataFrameSort = dacr::DataFrame<
 >;
 
 DataFrameSort df{};
-auto df_sorted = df.sortBy<dacr::SortOrder::Ascending, "a", "b">();
+auto df_sorted = df.sort<dacr::SortOrder::Ascending, "a", "b">();
 ```
 
 ## Appending

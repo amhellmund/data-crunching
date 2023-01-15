@@ -111,13 +111,13 @@ TEST(DataFrameSummarize, GetColumnForOp) {
     // Operation: Avg
     EXPECT_TRUE((std::is_same_v<
         GetColumnForOp<Avg<"a", "a_avg">, Column<"a", int>>,
-        Column<"a_avg", int>
+        Column<"a_avg", double>
     >));
 
     // Operation: StdDev
     EXPECT_TRUE((std::is_same_v<
         GetColumnForOp<StdDev<"a", "a_stddev">, Column<"a", int>>,
-        Column<"a_stddev", int>
+        Column<"a_stddev", double>
     >));
 
     // Operation: CountIf
@@ -136,12 +136,12 @@ TEST(DataFrameSummarize, GetColumnForOp) {
 TEST(DataFrameSummarize, GetNewColumnsForOps) {
     EXPECT_TRUE((std::is_same_v<
         GetNewColumnsForOps<TypeList<CountIf<"a", "a_cntif">>, Column<"a", bool>>,
-        TypeList<Column<"a_cntif", bool>>
+        TypeList<Column<"a_cntif", int>>
     >));
 
     EXPECT_TRUE((std::is_same_v<
-        GetNewColumnsForOps<TypeList<CountIf<"a", "a_cntif">, Max<"a", "a_max">>, Column<"a", bool>>,
-        TypeList<Column<"a_cntif", bool>, Column<"a_max", int>>
+        GetNewColumnsForOps<TypeList<CountIf<"a", "a_cntif">, Max<"b", "b_max">>, Column<"a", bool>, Column<"b", int>>,
+        TypeList<Column<"a_cntif", int>, Column<"b_max", int>>
     >));
 }
 
@@ -192,7 +192,7 @@ TEST(DataFrameSummarizer, GetSummarizerForOp) {
         SummarizerForCountIf,
         SummarizerCountIf<0, bool>
     >));
-    EXPECT_TRUE((std::is_same_v<SummarizerForCountIf, int>));
+    EXPECT_TRUE((std::is_same_v<SummarizerForCountIf::TargetType, int>));
 
     // Operation: CountIfNot
     using SummarizerForCountIfNot = GetSummarizerForOp<CountIfNot<"a", "a_cntifnot">, Column<"0", double>, Column<"a", bool>>;
@@ -200,7 +200,7 @@ TEST(DataFrameSummarizer, GetSummarizerForOp) {
         SummarizerForCountIfNot,
         SummarizerCountIfNot<1, bool>
     >));
-    EXPECT_TRUE((std::is_same_v<SummarizerForCountIfNot, int>));
+    EXPECT_TRUE((std::is_same_v<SummarizerForCountIfNot::TargetType, int>));
 }
 
 TEST(DataFrameSummarize, GetCompoundSummarizer) {

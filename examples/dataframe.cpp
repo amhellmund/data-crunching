@@ -81,7 +81,7 @@ int main (int argc, char *argv[]) {
     >();
 
     // sort the dataframe
-    auto df_summarize_sorted = df_summarize.sortBy<dacr::SortOrder::Ascending, "country">();
+    auto df_summarize_sorted = df_summarize.sort<dacr::SortOrder::Ascending, "country">();
 
     // print the dataframe
     df_summarize_sorted.print({

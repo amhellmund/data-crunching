@@ -117,7 +117,11 @@ struct DataFormatter<bool> {
     }
     
     static void format(std::ostream& stream, bool value, const PrintOptions& print_options) {
-        stream << std::setw(getWidth(print_options)) << std::boolalpha << getAlignment() << value;
+        // note: std::setw() does not seem to work with std::boolalpha
+        if (value) {
+            stream << " ";
+        }
+        stream << std::boolalpha << value;
     }
 };
 

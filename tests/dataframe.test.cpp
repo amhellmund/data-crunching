@@ -194,7 +194,7 @@ bool contains(std::string_view str_to_search_for, std::string_view str_to_search
     return str_to_search_in.find(str_to_search_for) != str_to_search_in.npos;
 }
 
-TEST(DataFrame, SortBy) {
+TEST(DataFrame, Sort) {
     DataFrame<
         Column<"a", int>,
         Column<"b", char>,
@@ -205,7 +205,7 @@ TEST(DataFrame, SortBy) {
     testdf.insert(20, 'B', 44.0);
     testdf.insert(10, 'C', 45.0);
 
-    auto sorted_by_single_asc = testdf.sortBy<SortOrder::Ascending, "a">();
+    auto sorted_by_single_asc = testdf.sort<SortOrder::Ascending, "a">();
     EXPECT_THAT(sorted_by_single_asc.getColumn<"a">(), ::testing::ElementsAre(5, 10, 10, 20));
     auto column_b = sorted_by_single_asc.getColumn<"b">();
     EXPECT_EQ(column_b[0], 'Z');
@@ -214,7 +214,7 @@ TEST(DataFrame, SortBy) {
     EXPECT_DOUBLE_EQ(column_c[0], 43.0);
     EXPECT_DOUBLE_EQ(column_c[3], 44.0);
 
-    auto sorted_by_single_desc = testdf.sortBy<SortOrder::Descending, "a">();
+    auto sorted_by_single_desc = testdf.sort<SortOrder::Descending, "a">();
     EXPECT_THAT(sorted_by_single_desc.getColumn<"a">(), ::testing::ElementsAre(20, 10, 10, 5));
     column_b = sorted_by_single_desc.getColumn<"b">();
     EXPECT_EQ(column_b[0], 'B');
@@ -223,7 +223,7 @@ TEST(DataFrame, SortBy) {
     EXPECT_DOUBLE_EQ(column_c[0], 44.0);
     EXPECT_DOUBLE_EQ(column_c[3], 43.0);
 
-    auto sorted_by_two_asc = testdf.sortBy<SortOrder::Ascending, "a", "b">();
+    auto sorted_by_two_asc = testdf.sort<SortOrder::Ascending, "a", "b">();
     EXPECT_THAT(sorted_by_two_asc.getColumn<"a">(), ::testing::ElementsAre(5, 10, 10, 20));
     EXPECT_THAT(sorted_by_two_asc.getColumn<"b">(), ::testing::ElementsAre('Z', 'A', 'C', 'B'));
     EXPECT_THAT(sorted_by_two_asc.getColumn<"c">(), ::testing::ElementsAre(43.0, 42.0, 45.0, 44.0));
@@ -282,6 +282,7 @@ TEST(DataFrame, Print) {
     testdf1.insert(10, 'A', 20.0, "ABCDEFGHIHKL", true);
 
     std::stringstream sstr;
+    testdf1.print<Select<"a", "b", "e">>();
     testdf1.print<Select<"a", "b", "e">>(PrintOptions{}, sstr);
     const auto& lines = getLines(sstr);
     ASSERT_EQ(lines.size(), 6);
