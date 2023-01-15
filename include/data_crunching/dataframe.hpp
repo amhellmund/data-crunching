@@ -181,7 +181,8 @@ public:
                 internal::NameListDifference<internal::GetColumnNames<Columns...>, internal::NameList<JoinNames...>>,
                 internal::NameListDifference<internal::GetColumnNames<OtherColumns...>, internal::NameList<JoinNames...>>
             >
-        >
+        > &&
+        internal::are_columns_the_same_in_two_lists_by_names<internal::NameList<JoinNames...>, TypeList<Columns...>, TypeList<OtherColumns...>>
     )
     auto join (const DataFrame<OtherColumns...>& df) {
         if constexpr (sizeof...(Columns) > 0) {

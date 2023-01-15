@@ -127,3 +127,23 @@ TEST(Select, GetSelectNameList) {
         NameList<"first">
     >));
 }
+
+TEST(Column, AreColumnsTheSameInTwoListsByNames) {
+    EXPECT_TRUE((are_columns_the_same_in_two_lists_by_names<
+        NameList<"a">,
+        TypeList<Column<"a", int>>,
+        TypeList<Column<"a", int>>
+    >));
+
+    EXPECT_FALSE((are_columns_the_same_in_two_lists_by_names<
+        NameList<"a">,
+        TypeList<Column<"a", int>>,
+        TypeList<Column<"a", double>>
+    >));
+
+    EXPECT_TRUE((are_columns_the_same_in_two_lists_by_names<
+        NameList<"a", "b">,
+        TypeList<Column<"a", int>, Column<"o", char>, Column<"b", double>>,
+        TypeList<Column<"a", int>, Column<"b", double>>
+    >));
+}

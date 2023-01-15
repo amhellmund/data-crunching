@@ -230,6 +230,24 @@ struct GetSelectNameListImpl<Select<ColumnNames...>, Columns...> {
 template <typename SelectNames, typename ...Columns>
 using GetSelectNameList = typename GetSelectNameListImpl<SelectNames, Columns...>::type;
 
+
+// ############################################################################
+// Trait: Are Columns The Same By NameList
+// ############################################################################
+template <typename ...>
+struct AreColumnsInTwoListsTheSameByNamesImpl : std::true_type {};
+
+template <FixedString FirstName, FixedString ...RestNames, typename ...ColumnsList1, typename ...ColumnsList2>
+struct AreColumnsInTwoListsTheSameByNamesImpl<NameList<FirstName, RestNames...>, TypeList<ColumnsList1...>, TypeList<ColumnsList2...>> {
+    static constexpr bool value = std::is_same_v<
+        GetColumnByName<FirstName, ColumnsList1...>,
+        GetColumnByName<FirstName, ColumnsList2...>
+    > && AreColumnsInTwoListsTheSameByNamesImpl<NameList<RestNames...>, TypeList<ColumnsList1...>, TypeList<ColumnsList2...>>::value;
+};
+
+template <typename Names, typename ColumnList1, typename ColumnList2>
+constexpr bool are_columns_the_same_in_two_lists_by_names = AreColumnsInTwoListsTheSameByNamesImpl<Names, ColumnList1, ColumnList2>::value;
+
 } // namespace internal
 
 } // namespace dacr
