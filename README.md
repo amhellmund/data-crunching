@@ -1,3 +1,5 @@
+[![Build Status](https://github.com/amhellmund/data_crunching/workflows/ci/badge.svg)](https://github.com/amhellmund/data_crunching/actions?query=workflow%3Aci)
+
 # Data Crunching for C++
 
 Data processing and analysis (also known as data crunching) are core aspects of software engineering.
