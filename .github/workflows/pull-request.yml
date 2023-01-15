@@ -9,7 +9,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - run: bash ./toolchain/scripts/setup_dev_env_ubuntu.bash
-      - run: ls -l /usr/bin/clang*
+        name: Prepare Development Environment
       - run: bazel build //...
         name: Build Data Crunching Library
       - run: bazel test //...
+        name: Run Tests for Data Crunching Library
