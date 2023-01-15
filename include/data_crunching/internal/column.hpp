@@ -42,7 +42,15 @@ struct IsColumnImpl<FirstType, RestTypes...> : std::false_type {};
 
 template <FixedString FirstName, typename FirstType, typename ...RestColumns>
 struct IsColumnImpl<Column<FirstName, FirstType>, RestColumns...> {
-    static constexpr bool value = IsColumnImpl<RestColumns...>::value;
+    static constexpr bool value = (
+        !std::is_reference_v<FirstType> && 
+        !std::is_const_v<FirstType> && 
+        !std::is_volatile_v<FirstType> &&
+        std::is_default_constructible_v<FirstType> &&
+        std::is_copy_constructible_v<FirstType> &&
+        std::is_move_constructible_v<FirstType> &&
+        IsColumnImpl<RestColumns...>::value
+    );
 };
 
 template <typename T>

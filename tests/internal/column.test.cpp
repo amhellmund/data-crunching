@@ -26,6 +26,13 @@ using namespace dacr::internal;
 
 TEST(Column, IsColumn) {
     EXPECT_TRUE((is_column<dacr::Column<"name", int>>));
+    EXPECT_FALSE((is_column<dacr::Column<"name", int&>>));
+    EXPECT_FALSE((is_column<dacr::Column<"name", const int>>));
+    EXPECT_FALSE((is_column<dacr::Column<"name", const int&>>));
+    EXPECT_FALSE((is_column<dacr::Column<"name", volatile int>>));
+    EXPECT_FALSE((is_column<dacr::Column<"name", volatile int&>>));
+    EXPECT_FALSE((is_column<dacr::Column<"name", volatile const int>>));
+    EXPECT_FALSE((is_column<dacr::Column<"name", volatile const int&>>));
 }
 
 TEST(Column, NotIsColumn) {
