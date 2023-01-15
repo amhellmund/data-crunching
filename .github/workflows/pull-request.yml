@@ -10,7 +10,9 @@ jobs:
       - uses: actions/checkout@v3
       - run: bash ./toolchain/scripts/setup_dev_env_ubuntu.bash
         name: Prepare Development Environment
+      - run: bazel fetch //:data_crunching
+        name: Prepare Build
       - run: bazel build //...
-        name: Build Data Crunching Library
+        name: Build
       - run: bazel test //...
-        name: Run Tests for Data Crunching Library
+        name: Run Tests
