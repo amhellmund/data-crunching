@@ -27,7 +27,9 @@
 namespace dacr {
 
 struct PrintOptions {
-    /* column widths for arithmetic data types */
+    /* column widths for at least 64-bit integral data types */
+    std::size_t int64_width{10};
+    /* column widths for floating-point data types */
     std::size_t fixedpoint_width{10};
     std::size_t fixedpoint_precision{2};
     /* column width for string types */
@@ -71,11 +73,25 @@ struct DataFormatter {
     static void format(std::ostream& stream, const T& value, const PrintOptions&print_options) {
         std::stringstream sstr;
         sstr << value;
-        formatStringWithWidthAndAlignment(stream, sstr.str(), getWidth(print_options), getAlignment());
+        formatStringWithWidthAndAlignment(stream, removeLineBreaks(sstr.str()), getWidth(print_options), getAlignment());
+    }
+
+    static std::string removeLineBreaks (std::string_view sstr) {
+        std::string result;
+        for (const auto ch : sstr) {
+            if (ch == '\n') {
+                result.push_back('|');
+            }
+            else if (ch != '\r') {
+                result.push_back(ch);
+            }
+        }
+        return result;
     }
 };
 
 template <IsIntegral T>
+requires (std::numeric_limits<T>::digits10 <= std::numeric_limits<int>::digits10)
 struct DataFormatter<T> {
     static auto getAlignment() {
         return std::right;
@@ -90,6 +106,24 @@ struct DataFormatter<T> {
     }
 };
 
+template <IsIntegral T>
+requires (std::numeric_limits<T>::digits10 > std::numeric_limits<int>::digits10)
+struct DataFormatter<T> {
+    static auto getAlignment() {
+        return std::right;
+    }
+
+    static int getWidth (const PrintOptions& print_options) {
+        return print_options.int64_width;
+    }
+
+    static void format(std::ostream& stream, const T& value, const PrintOptions& print_options) {
+        std::stringstream sstr;
+        sstr << std::setw(getWidth(print_options)) << getAlignment() << value;
+        formatStringWithWidthAndAlignment(stream, sstr.str(), getWidth(print_options), getAlignment());
+    }
+};
+
 template <IsFloatingPoint T>
 struct DataFormatter<T> {
     static auto getAlignment() {
@@ -101,7 +135,9 @@ struct DataFormatter<T> {
     }
     
     static void format(std::ostream& stream, const T& value, const PrintOptions& print_options) {
-        stream << std::setw(getWidth(print_options)) << getAlignment() << std::fixed << std::setprecision(print_options.fixedpoint_precision) << value;
+        std::stringstream sstr;
+        sstr << std::setw(getWidth(print_options)) << getAlignment() << std::fixed << std::setprecision(print_options.fixedpoint_precision) << value;
+        formatStringWithWidthAndAlignment(stream, sstr.str(), getWidth(print_options), getAlignment());
     }
 };
 

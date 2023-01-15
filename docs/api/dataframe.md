@@ -377,6 +377,7 @@ The `PrintOptions` contain the following configuration options:
 
 | Option | Default | Description | 
 |:------:|:-------:|:------------|
+| `int64_width` | 10 | The maximum width for large integer types (at least 64-bit). |
 | `fixedpoint_precision` | 2 | The precision of floating point types. |
 | `fixedpoint_width` | 10 | The width of floating point types. |
 | `custom_width` | 10 | The maximum width of custom types. |

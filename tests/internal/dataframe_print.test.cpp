@@ -88,7 +88,7 @@ TEST(DataFramePrint, DataFormatter) {
     EXPECT_GE(DataFormatter<char>::getWidth({}), 4);
     EXPECT_GE(DataFormatter<short>::getWidth({}), 6);
     EXPECT_GE(DataFormatter<int>::getWidth({}), 10);
-    EXPECT_GE(DataFormatter<long int>::getWidth({}), 20);
+    EXPECT_GE(DataFormatter<long int>::getWidth({}), 10);
     EXPECT_GE(DataFormatter<float>::getWidth({.fixedpoint_width = 10}), 11);
     EXPECT_GE(DataFormatter<double>::getWidth({.fixedpoint_width = 20}), 11);
     EXPECT_GE(DataFormatter<std::string>::getWidth({.string_width = 30}), 30);
