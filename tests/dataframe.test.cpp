@@ -43,7 +43,7 @@ TEST(DataFrame, InsertScalarValues) {
     EXPECT_THAT((testdf.getColumn<"dbl">()), ::testing::ElementsAre(30.0, 60.0));
 }
 
-TEST(DataFrame, InsertRanges) {
+TEST(DataFrame, InsertRangesSameSize) {
     DataFrame<
         Column<"int", int>,
         Column<"dbl", double>
@@ -53,9 +53,26 @@ TEST(DataFrame, InsertRanges) {
     std::vector<double> rng_dbl {1.5, 2.5, 3.5};
 
     EXPECT_EQ(testdf.getSize(), 0);
-    testdf.insertRanges(rng_int, rng_dbl);
+    auto num_inserted = testdf.insertRanges(rng_int, rng_dbl);
+    EXPECT_EQ(num_inserted, 3);
     EXPECT_THAT((testdf.getColumn<"int">()), ::testing::ElementsAre(1, 2, 3));
     EXPECT_THAT((testdf.getColumn<"dbl">()), ::testing::ElementsAre(1.5, 2.5, 3.5));
+}
+
+TEST(DataFrame, InsertRangesDifferentSize) {
+    DataFrame<
+        Column<"int", int>,
+        Column<"dbl", double>
+    > testdf;
+
+    std::vector<int> rng_int {1, 2, 3};
+    std::vector<double> rng_dbl {1.5, 2.5};
+
+    EXPECT_EQ(testdf.getSize(), 0);
+    auto num_inserted = testdf.insertRanges(rng_int, rng_dbl);
+    EXPECT_EQ(num_inserted, 2);
+    EXPECT_THAT((testdf.getColumn<"int">()), ::testing::ElementsAre(1, 2));
+    EXPECT_THAT((testdf.getColumn<"dbl">()), ::testing::ElementsAre(1.5, 2.5));
 }
 
 TEST(DataFrame, Append) {
