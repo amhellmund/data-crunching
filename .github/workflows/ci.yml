@@ -1,0 +1,25 @@
+name: ci
+run-name: "CI Pipeline for Data Crunching"
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [opened, reopend, synchronized]
+  push:
+    branches:
+      - 'main'
+      - 'develop'
+
+jobs:
+  run-build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: bash ./toolchain/scripts/setup_dev_env_ubuntu.bash
+        name: Prepare Development Environment
+      - run: bazel fetch //:data_crunching
+        name: Prepare Build
+      - run: bazel build //...
+        name: Build
+      - run: bazel test //...
+        name: Run Tests

@@ -1,0 +1,13 @@
+title: Data Crunching
+description: A data analysis and processing library for modern C++
+remote_theme: just-the-docs/just-the-docs
+
+url: https://amhellmund.github.io/data_crunching/
+
+aux_links:
+  Github Repository: https://github.com/amhellmund/data_crunching
+
+plugins:
+  - jekyll-default-layout
+
+search_enabled: false
