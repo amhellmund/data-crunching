@@ -1,7 +1,9 @@
 name: pull-request
 run-name: "Pull-Request Pipeline for Data Crunching"
 
-on: [workflow_dispatch]
+on:
+  pull-request:
+    types: [opened, reopend, synchronized]
 
 jobs:
   run-build-and-test:
