@@ -10,6 +10,7 @@ jobs:
       - uses: actions/checkout@v3
       - run: bash ./toolchain/scripts/setup_dev_env_ubuntu.bash
         name: Prepare Development Environment
+      - run: /usr/bin/clang++ --version
       - run: bazel build //...
         name: Build Data Crunching Library
       - run: bazel test //...
