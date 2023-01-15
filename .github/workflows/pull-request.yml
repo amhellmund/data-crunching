@@ -2,6 +2,7 @@ name: pull-request
 run-name: "Pull-Request Pipeline for Data Crunching"
 
 on:
+  workflow-dispatch:
   pull-request:
     types: [opened, reopend, synchronized]
 
