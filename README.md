@@ -169,6 +169,9 @@ int main (int argc, char*argv[]) {
 
     // access to members
     namedtuple3.get<"a">() = 2.0 * namedtuple3.get<"d">();
+
+    // structured bindings
+    auto [a, d] = namedtuple3;
 }
 ```
 

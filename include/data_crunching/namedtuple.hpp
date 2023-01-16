@@ -50,6 +50,28 @@ struct GetTypesFromFieldsImpl<Field<FirstFieldName, FirstFieldType>, RestFields.
 template <typename ...Fields>
 using GetTypesFromFields = typename GetTypesFromFieldsImpl<Fields...>::type;
 
+
+// ############################################################################
+// Trait: Get Type By Index
+// ############################################################################
+template <std::size_t, std::size_t, typename ...>
+struct GetTypeFromFieldsByIndexImpl {
+    using type = void;
+};
+
+template <std::size_t LoopIndex, std::size_t SearchIndex, FixedString FirstFieldName, typename FirstFieldType, typename ...RestFields>
+struct GetTypeFromFieldsByIndexImpl<LoopIndex, SearchIndex, Field<FirstFieldName, FirstFieldType>, RestFields...> {
+    using type = std::conditional_t<
+        LoopIndex == SearchIndex,
+        FirstFieldType,
+        typename GetTypeFromFieldsByIndexImpl<LoopIndex + 1, SearchIndex, RestFields...>::type
+    >;
+};
+
+template <std::size_t SearchIndex, typename ...Fields>
+using GetTypeFromFieldsByIndex = typename GetTypeFromFieldsByIndexImpl<0, SearchIndex, Fields...>::type;
+
+
 // ############################################################################
 // Trait: Get Names From Fields
 // ############################################################################
@@ -116,6 +138,9 @@ struct FieldForward {
 
 } // namespace internal
 
+// ############################################################################
+// Class: NamedTuple
+// ############################################################################
 template <internal::IsField ...Fields>
 requires (
     sizeof...(Fields) > 0 &&
@@ -143,6 +168,24 @@ public:
         return std::get<internal::get_field_index_by_name<FieldName, Fields...>>(data_);
     }
 
+    template <std::size_t Index>
+    requires (Index < sizeof...(Fields))
+    decltype(auto) get() & {
+        return std::get<Index>(data_);
+    }
+
+    template <std::size_t Index>
+    requires (Index < sizeof...(Fields))
+    decltype(auto) get() const & {
+        return std::get<Index>(data_);
+    }
+
+    template <std::size_t Index>
+    requires (Index < sizeof...(Fields))
+    decltype(auto) get() && {
+        return std::move(std::get<Index>(data_));
+    }
+
 private:
     using NamedTupleData = typename internal::GetTypesFromFields<Fields...>::template To<std::tuple>;
 
@@ -164,5 +207,18 @@ constexpr auto operator"" _field()
     return dacr::internal::FieldForward<A>{};
 }
 #endif // DACR_DISABLE_FIELD_LITERAL
+
+// ############################################################################
+// Traits: Structured Bindings
+// ############################################################################
+template <typename ...Fields>
+struct std::tuple_size<dacr::NamedTuple<Fields...>> {
+    static constexpr int value = sizeof...(Fields);
+};
+
+template <std::size_t Index, typename ...Fields>
+struct std::tuple_element<Index, dacr::NamedTuple<Fields...>> {
+    using type = dacr::internal::GetTypeFromFieldsByIndex<Index, Fields...>;
+};
 
 #endif // DATA_CRUNCHING_NAMEDTUPLE_HPP

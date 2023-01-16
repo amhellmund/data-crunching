@@ -40,3 +40,15 @@ TEST(NamedTupleInternal, GetFieldIndexByName) {
     EXPECT_EQ((get_field_index_by_name<"int", Field<"int", int>, Field<"dbl", double>>), 0);
     EXPECT_EQ((get_field_index_by_name<"dbl", Field<"int", int>, Field<"dbl", double>>), 1);
 } 
+
+TEST(NamedTupleInternal, GetTypeFromFieldsByIndex) {
+    EXPECT_TRUE((std::is_same_v<
+        GetTypeFromFieldsByIndex<0, Field<"int", int>, Field<"dbl", double>>,
+        int
+    >));
+
+    EXPECT_TRUE((std::is_same_v<
+        GetTypeFromFieldsByIndex<1, Field<"int", int>, Field<"dbl", double>>,
+        double
+    >));
+}
