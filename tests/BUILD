@@ -23,6 +23,7 @@ cc_test(
 cc_test(
     name = "test_internal",
     srcs = [
+        "internal/argparse.test.cpp",
         "internal/column.test.cpp",
         "internal/dataframe_general.test.cpp",
         "internal/dataframe_print.test.cpp",
