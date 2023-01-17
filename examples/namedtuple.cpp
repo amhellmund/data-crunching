@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 #include <data_crunching/namedtuple.hpp>
+#include <iostream>
 
 int main (int argc, char*argv[]) {
     // variant 1: NamedTuple definition
@@ -27,4 +28,7 @@ int main (int argc, char*argv[]) {
 
     // access to members
     namedtuple3.get<"a">() = 2.0 * namedtuple3.get<"d">();
+
+    // structured bindings
+    auto [a, d] = namedtuple3;
 }

@@ -52,6 +52,7 @@ auto point3d_by_field_literals = dacr::NamedTuple("x"_field = 1.0, "y"_field = -
 auto point3d_by_field_macro = dacr::NamedTuple(dacr_field("x") = 1.0, dacr_field("y") = -1.0, dacr_field("z") = 0.5);
 ```
 
+
 ## Member Access
 
 The members of the `NamedTuple` may be accessed for read and write by the `get` template function:
@@ -60,4 +61,15 @@ The members of the `NamedTuple` may be accessed for read and write by the `get` 
 auto x = point.get<"x">();
 
 point.get<"x">() = 2.0;
+```
+
+
+## Structured Bindings
+
+The `NamedTuple` may also be used with structured bindings:
+
+```cpp
+auto tuple = dacr::NamedTuple("i"_field = 1, "d"_field = 2.0);
+
+const auto& [i, d] = tuple;
 ```
