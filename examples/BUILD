@@ -13,3 +13,11 @@ cc_binary(
         "//:data_crunching",
     ]
 )
+
+cc_binary(
+    name = "example_argparse",
+    srcs = ["argparse.cpp"],
+    deps = [
+        "//:data_crunching",
+    ]
+)
