@@ -47,7 +47,30 @@ inline auto help (std::string_view str) {
     return Help{.text {str}};
 }
 
-template <FixedString ArgName, typename ArgType>
+template <typename T>
+struct Optional {
+    T value;
+};
+
+struct Store {
+    bool store{true};
+};
+
+inline auto store(bool value) {
+    return Store{.store = value};
+}
+
+template <typename T>
+inline auto optional(T&& value) {
+    return Optional<T>{.value = std::forward<T>(value)};
+}
+
+enum ArgSpec {
+    PositionArgument = 0,
+    OptionArgument = 1,
+};
+
+template <FixedString Name, typename Type, ArgSpec Spec = ArgSpec::OptionArgument>
 struct Arg {
     template <typename ...Opts>
     Arg (Opts&& ...options) {
@@ -56,7 +79,7 @@ struct Arg {
     bool is_positional{false};
     std::optional<std::string> mnemonic;
     std::optional<std::string> help;
-    ArgType value {};
+    Type value {};
 };
 
 namespace internal {
@@ -95,10 +118,13 @@ public:
         }
         std::vector<std::string> args {argv, argv + argc};
 
-        // iterate the arguments and pass 
-        for (int i = 0; i < argc; /* no auto increment */) {
-            i += ArgumentProcessor::process(arg_desc, args, i);
-        }
+        // iterate the arguments and pass
+        // ArgumentProcessor processor;
+        // for (int i = 0; i < argc; /* no auto increment */) {
+        //     i += processor.processArg(arg_desc, args, i);
+        // }
+        // processor.validate();
+        // processor.constructResult();
 
         using Result = typename internal::ConstructArgumentData<Args...>::template To<NamedTuple>;
         return Result{};

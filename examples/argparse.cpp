@@ -15,9 +15,13 @@
 #include <data_crunching/argparse.hpp>
 #include <iostream>
 
+using namespace dacr;
+
 int main (int argc, char*argv[]) {
-    auto argparser = dacr::ArgumentParser(
-        dacr::Arg<"namespace", const char*>(dacr::mnemonic("n"), dacr::help("The namespace"))
+    auto argparser = ArgumentParser(
+        Arg<"namespace", const char*>(mnemonic("n"), help("The namespace"), optional("abc")),
+        Arg<"switch", bool>(mnemonic("s"), help("Help text"), store(true)),
+        Arg<"input", std::vector<int>, ArgSpec::PositionArgument>()
     );
     auto args = argparser.parse(argc, argv);
     std::cout << args.get<"namespace">() << "\n";
