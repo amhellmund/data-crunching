@@ -17,12 +17,19 @@
 
 using namespace dacr;
 
+struct Namespace {
+    Namespace () {}
+    Namespace (std::string s) {}
+    Namespace& operator= (std::string s) { return *this; }
+    std::string a;
+};
+
 int main (int argc, char*argv[]) {
     auto argparser = ArgumentParser(
-        Arg<"namespace", const char*>(mnemonic("n"), help("The namespace"), optional("abc")),
+        Arg<"namespace", Namespace>(mnemonic("n"), help("The namespace"), optional("abc")),
         Arg<"switch", bool>(mnemonic("s"), help("Help text"), store(true)),
-        Arg<"input", std::vector<int>, ArgSpec::PositionArgument>()
+        Arg<"input", std::vector<int>>(positional())
     );
     auto args = argparser.parse(argc, argv);
-    std::cout << args.get<"namespace">() << "\n";
+    auto ns = args.get<"namespace">(); 
 }
