@@ -142,7 +142,7 @@ struct SpecIsContainedImpl : std::false_type {};
 
 template <typename SearchType, typename FirstSpec, typename ...RestSpecs>
 struct SpecIsContainedImpl<SearchType, FirstSpec, RestSpecs...> {
-    static constexpr bool value = std::is_same_v<SearchType, FirstSpec> || SpecIsContainedImpl<SearchType, RestSpecs...>::value;
+    static constexpr bool value = std::is_same_v<SearchType, std::remove_reference_t<FirstSpec>> || SpecIsContainedImpl<SearchType, RestSpecs...>::value;
 };
 
 template <typename SearchType, typename ...Specs>
@@ -221,6 +221,15 @@ concept IsSpecForNAry = IsSpecForNAryImpl<T>::value;
 
 
 template <typename T>
+struct IsOptionalImpl : std::false_type {};
+
+template <typename T>
+struct IsOptionalImpl<std::optional<T>> : std::true_type {};
+
+template <typename T>
+concept IsOptional = IsOptionalImpl<T>::value;
+
+template <typename T>
 concept IsValidTypeForArg = (
     internal::IsArithmetic<T> ||
     requires {
@@ -242,7 +251,6 @@ struct ArgCommonData {
 };
 
 inline bool hasMatch (const std::string& arg, const ArgCommonData& arg_data) {
-    std::cout << "hasMatch: " << arg << "\n";
     return (arg == arg_data.arg_name) or (arg_data.mnemonic.has_value() and arg == *arg_data.mnemonic);
 }
 
@@ -284,7 +292,7 @@ struct Arg<Name, Type> : ArgBase {
     Arg (Opts&& ...options) : common_data{getArgCommonData(Name.toString(), options...)} {
         auto optional = get_optional(options...);
         if constexpr (not std::is_same_v<decltype(optional), std::nullopt_t>) {
-            value = optional;
+            value = Type{optional};
         }
         else {
             common_data.is_required = true;
@@ -292,9 +300,8 @@ struct Arg<Name, Type> : ArgBase {
     }
 
     std::optional<int> consume (const std::vector<std::string>& args, int pos) {
-        std::cout << "Consume\n";
         if (common_data.is_positional and isPositional(args[pos])) {
-            value = args[pos];
+            value = Type{args[pos]};
             common_data.has_match = true;
             return 1;
         }
@@ -303,18 +310,21 @@ struct Arg<Name, Type> : ArgBase {
                 // missing arguments
                 // throw exception
             }
-            std::cout << "Store Arg\n";
-            value = args[pos+1];
+            value = Type{args[pos+1]};
             common_data.has_match = true;
             return 2;
         }
-        std::cout << "Consume: Nullopt\n";
         return std::nullopt;
+    }
+    
+    template <typename NamedTuple>
+    void storeResult (NamedTuple& nt) {
+        nt.template get<Name>() = *value;
     }
 
     std::string arg_name;
     ArgCommonData common_data{};
-    Type value {};
+    std::optional<Type> value {};
 };
 
 // concept for optional types
@@ -322,7 +332,7 @@ template <FixedString Name, IsValidTypeForArg Type>
 struct Arg<Name, std::optional<Type>> : ArgBase{
 
     template <IsSpecForOptionalArg ...Opts>
-    Arg (Opts&& ...options) : common_data{getArgCommonData(options...)} {
+    Arg (Opts&& ...options) : common_data{getArgCommonData(Name.toString(), options...)} {
 
     }
 
@@ -337,6 +347,11 @@ struct Arg<Name, std::optional<Type>> : ArgBase{
             return 2;
         }
         return std::nullopt;
+    }
+
+    template <typename NamedTuple>
+    void storeResult (NamedTuple& nt) {
+        nt.template get<Name>() = value;
     }
 
     ArgCommonData common_data{};
@@ -354,13 +369,17 @@ struct Arg<Name, bool>  : ArgBase{
     std::optional<int> consume (const std::vector<std::string>& args, int pos) {
         if (hasMatch(args[pos], common_data)) {
             if (not common_data.has_match) {
-                std::cout << "Store Switch\n";
                 value = not value;
                 common_data.has_match = true;
             }
             return 1;
         }
         return std::nullopt;
+    }
+
+    template <typename NamedTuple>
+    void storeResult (NamedTuple& nt) {
+        nt.template get<Name>() = value;
     }
 
     ArgCommonData common_data;
@@ -377,7 +396,6 @@ struct Arg<Name, std::vector<Type>> : ArgBase{
 
     std::optional<int> consume (const std::vector<std::string>& args, int pos) {
         if (common_data.is_positional and isPositional(args[pos])) {
-            std::cout << "Store Positional Vector\n";
             values.push_back(std::stoi(args[pos]));
             common_data.has_match = true;
             return 1;
@@ -391,6 +409,11 @@ struct Arg<Name, std::vector<Type>> : ArgBase{
             return 2;
         }
         return std::nullopt;
+    }
+
+    template <typename NamedTuple>
+    void storeResult (NamedTuple& nt) {
+        nt.template get<Name>() = values;
     }
 
     ArgCommonData common_data;
@@ -432,12 +455,9 @@ public:
             printHelpText();
         }
         std::vector<std::string> args {argv + 1, argv + argc};
-        for (const auto& s : args) {
-            std::cout << s << "\n";
-        }
 
         auto args_in_vector = getArgsInVector(std::index_sequence_for<Args...>{});
-        for (int i = 0; i < argc; /* no auto increment */) {
+        for (int i = 0; i < args.size(); /* no auto increment */) {
             std::optional<int> consumed;
             for (int a = 0LU; a < args_in_vector.size(); ++a) {
                 consumed = args_in_vector[a]->consume(args, i);
@@ -452,18 +472,17 @@ public:
                 // error
             }
         }
-        // iterate the arguments and pass
-        // ArgumentProcessor processor;
-        // 
-        // processor.validate();
-        // processor.constructResult();
-
         using Result = typename internal::ConstructArgumentData<Args...>::template To<NamedTuple>;
-        return Result{};
+        Result result{};
+        storeResult(result, std::index_sequence_for<Args...>{});
+        return result;
     }
 
 private:
-    //using ArgumentProcessor = ...;
+    template <typename NamedTuple, std::size_t ...Indices>
+    void storeResult (NamedTuple& nt, std::integer_sequence<std::size_t, Indices...>) {
+        ((std::get<Indices>(arg_desc_).storeResult(nt)), ...);
+    }
 
     template <std::size_t ...Indices>
     std::vector<ArgBase*> getArgsInVector (std::integer_sequence<std::size_t, Indices...>) {
