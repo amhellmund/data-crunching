@@ -12,8 +12,9 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#include <data_crunching/argparse.hpp>
 #include <iostream>
+#include <data_crunching/argparse.hpp>
+
 
 using namespace dacr;
 

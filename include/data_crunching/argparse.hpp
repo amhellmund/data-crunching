@@ -88,7 +88,7 @@ auto get_mnemonic (F f, Rest ...rest) {
 
 template <typename ...Rest>
 auto get_mnemonic(Mnemonic m, Rest ...rest) {
-    return m.short_arg;
+    return std::string("-") + m.short_arg;
 }
 
 
@@ -120,6 +120,21 @@ auto get_optional (F f, Rest ...rest) {
 template <typename T, typename ...Rest>
 auto get_optional(Optional<T> m, Rest ...rest) {
     return m.value;
+}
+
+template <typename F, typename ...Rest>
+auto get_store (F f, Rest ...rest) {
+    if constexpr (sizeof...(Rest) > 0) {
+        return get_store(rest...);
+    }
+    else {
+        return true;
+    }
+}
+
+template <typename ...Rest>
+auto get_store(Store m, Rest ...rest) {
+    return m.store;
 }
 
 template <typename SearchType, typename ...Specs>
@@ -157,9 +172,6 @@ concept IsSpecForArg = IsSpecForArgImpl<T>::value;
 
 template <typename>
 struct IsSpecForOptionalArgImpl : std::false_type {};
-
-template<>
-struct IsSpecForOptionalArgImpl<Positional> : std::true_type {};
 
 template <>
 struct IsSpecForOptionalArgImpl<Mnemonic> : std::true_type {};
@@ -216,19 +228,34 @@ concept IsValidTypeForArg = (
     }
 );
 
-
 struct ArgCommonData {
+    std::string arg_name;
+    std::optional<std::string> mnemonic;
+
     bool is_required {false};
     bool is_positional {false};
     bool is_n_ary {false};
-    std::optional<std::string> mnemonic;
+    
     std::optional<std::string> help;
 
     bool has_match {false};
 };
 
+inline bool hasMatch (const std::string& arg, const ArgCommonData& arg_data) {
+    std::cout << "hasMatch: " << arg << "\n";
+    return (arg == arg_data.arg_name) or (arg_data.mnemonic.has_value() and arg == *arg_data.mnemonic);
+}
+
+inline bool isPositional (const std::string& arg) {
+    return (not arg.starts_with("-"));
+}
+
+struct ArgBase {
+    virtual std::optional<int> consume (const std::vector<std::string>& args, int pos) = 0;
+};
+
 template <typename ...Opts>
-auto getArgCommonData (Opts&& ...options) {
+auto getArgCommonData (const std::string& arg_name, Opts&& ...options) {
     ArgCommonData result{};
     if constexpr (is_spec_contained<Positional, Opts...>) {
         result.is_positional = true;
@@ -242,6 +269,7 @@ auto getArgCommonData (Opts&& ...options) {
     if constexpr (is_spec_contained<Required, Opts...>) {
         result.is_required = true;
     }
+    result.arg_name = "--" + arg_name;
     return result;
 }
 
@@ -249,11 +277,11 @@ template <FixedString Name, typename Type>
 struct Arg;
 
 template <FixedString Name, IsValidTypeForArg Type>
-struct Arg<Name, Type> {
+struct Arg<Name, Type> : ArgBase {
     static_assert(IsValidTypeForArg<Type>);
     // concept for ordinary args
     template <IsSpecForArg ...Opts>
-    Arg (Opts&& ...options) : common_data{getArgCommonData(options...)} {
+    Arg (Opts&& ...options) : common_data{getArgCommonData(Name.toString(), options...)} {
         auto optional = get_optional(options...);
         if constexpr (not std::is_same_v<decltype(optional), std::nullopt_t>) {
             value = optional;
@@ -263,16 +291,53 @@ struct Arg<Name, Type> {
         }
     }
 
+    std::optional<int> consume (const std::vector<std::string>& args, int pos) {
+        std::cout << "Consume\n";
+        if (common_data.is_positional and isPositional(args[pos])) {
+            value = args[pos];
+            common_data.has_match = true;
+            return 1;
+        }
+        else if (hasMatch(args[pos], common_data)) {
+            if (pos + 1 >= args.size()) {
+                // missing arguments
+                // throw exception
+            }
+            std::cout << "Store Arg\n";
+            value = args[pos+1];
+            common_data.has_match = true;
+            return 2;
+        }
+        std::cout << "Consume: Nullopt\n";
+        return std::nullopt;
+    }
+
+    std::string arg_name;
     ArgCommonData common_data{};
     Type value {};
 };
 
 // concept for optional types
 template <FixedString Name, IsValidTypeForArg Type>
-struct Arg<Name, std::optional<Type>> {
+struct Arg<Name, std::optional<Type>> : ArgBase{
 
     template <IsSpecForOptionalArg ...Opts>
-    Arg (Opts&& ...options) : common_data{getArgCommonData(options...)} {}
+    Arg (Opts&& ...options) : common_data{getArgCommonData(options...)} {
+
+    }
+
+    std::optional<int> consume (const std::vector<std::string>& args, int pos) {
+        if (hasMatch(args[pos], common_data)) {
+            if (pos + 1 >= args.size()) {
+                // missing arguments
+                // throw exception
+            }
+            value = args[pos+1];
+            common_data.has_match = true;
+            return 2;
+        }
+        return std::nullopt;
+    }
 
     ArgCommonData common_data{};
     std::optional<Type> value {};
@@ -280,10 +345,22 @@ struct Arg<Name, std::optional<Type>> {
 
 // concept for switches
 template <FixedString Name>
-struct Arg<Name, bool> {
+struct Arg<Name, bool>  : ArgBase{
     template <IsSpecForSwitch ...Opts>
-    Arg (Opts&& ...options) : common_data{getArgCommonData(options...)} {
+    Arg (Opts&& ...options) : common_data{getArgCommonData(Name.toString(), options...)} {
+        value = not get_store(options...);
+    }
 
+    std::optional<int> consume (const std::vector<std::string>& args, int pos) {
+        if (hasMatch(args[pos], common_data)) {
+            if (not common_data.has_match) {
+                std::cout << "Store Switch\n";
+                value = not value;
+                common_data.has_match = true;
+            }
+            return 1;
+        }
+        return std::nullopt;
     }
 
     ArgCommonData common_data;
@@ -292,10 +369,28 @@ struct Arg<Name, bool> {
 
 // concept for n-ary
 template <FixedString Name, IsValidTypeForArg Type>
-struct Arg<Name, std::vector<Type>> {
+struct Arg<Name, std::vector<Type>> : ArgBase{
     template <IsSpecForNAry ...Opts>
-    Arg (Opts&& ...options) : common_data{getArgCommonData(options...)} {
+    Arg (Opts&& ...options) : common_data{getArgCommonData(Name.toString(), options...)} {
         common_data.is_n_ary = true;
+    }
+
+    std::optional<int> consume (const std::vector<std::string>& args, int pos) {
+        if (common_data.is_positional and isPositional(args[pos])) {
+            std::cout << "Store Positional Vector\n";
+            values.push_back(std::stoi(args[pos]));
+            common_data.has_match = true;
+            return 1;
+        }
+        else if (hasMatch(args[pos], common_data)) {
+            if (pos + 1 >= args.size()) {
+                // missing arguments
+                // throw exception
+            }
+            values.push_back(std::stoi(args[pos]));
+            return 2;
+        }
+        return std::nullopt;
     }
 
     ArgCommonData common_data;
@@ -336,13 +431,30 @@ public:
         if (containsHelpOption(argc, argv)) {
             printHelpText();
         }
-        std::vector<std::string> args {argv, argv + argc};
+        std::vector<std::string> args {argv + 1, argv + argc};
+        for (const auto& s : args) {
+            std::cout << s << "\n";
+        }
 
+        auto args_in_vector = getArgsInVector(std::index_sequence_for<Args...>{});
+        for (int i = 0; i < argc; /* no auto increment */) {
+            std::optional<int> consumed;
+            for (int a = 0LU; a < args_in_vector.size(); ++a) {
+                consumed = args_in_vector[a]->consume(args, i);
+                if (consumed.has_value()) {
+                    break;
+                }
+            }
+            if (consumed.has_value()) {
+                i += *consumed;
+            }
+            else {
+                // error
+            }
+        }
         // iterate the arguments and pass
         // ArgumentProcessor processor;
-        // for (int i = 0; i < argc; /* no auto increment */) {
-        //     i += processor.processArg(arg_desc, args, i);
-        // }
+        // 
         // processor.validate();
         // processor.constructResult();
 
@@ -352,6 +464,13 @@ public:
 
 private:
     //using ArgumentProcessor = ...;
+
+    template <std::size_t ...Indices>
+    std::vector<ArgBase*> getArgsInVector (std::integer_sequence<std::size_t, Indices...>) {
+        std::vector<ArgBase*> result;
+        ((result.push_back(&std::get<Indices>(arg_desc_))), ...);
+        return result;
+    }
 
     using ArgumentDescriptions = std::tuple<Args...>;
     ArgumentDescriptions arg_desc_;
@@ -365,7 +484,9 @@ private:
         return false;
     }
 
-    void printHelpText () const {}
+    void printHelpText () const {
+        std::cout << "HELP\n";
+    }
 };
 
 template <typename ...CtorArgs>
