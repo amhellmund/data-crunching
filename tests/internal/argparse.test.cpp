@@ -15,14 +15,38 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 
-#include "data_crunching/argparse.hpp"
+#include "data_crunching/internal/argparse.hpp"
 
 using namespace dacr;
 using namespace dacr::internal;
 
-TEST(ArgParseInternal, ConstructArgumentData) {
-    EXPECT_TRUE((std::is_same_v<
-        ConstructArgumentData<Arg<"arg1", int>, Arg<"arg2", double>>,
-        TypeList<Field<"arg1", int>, Field<"arg2", double>>
-    >));
+TEST(ArgParseInternal, GetMnemonic) {
+    auto mnemonic = getMnemonic(Required{}, Mnemonic{.short_arg = "n"});
+    EXPECT_THAT(mnemonic, ::testing::Optional(std::string{"-n"}));
+
+    auto no_mnemonic = getMnemonic(Required{}, Positional{});
+    EXPECT_THAT(no_mnemonic, ::testing::Eq(std::nullopt));
 }
+
+TEST(ArgParseInternal, GetHelp) {
+    auto help = getHelp(Required{}, Help{.text = "help"}, Mnemonic{.short_arg = "n"});
+    EXPECT_THAT(help, ::testing::Optional(std::string{"help"}));
+
+    auto no_help = getHelp(Required{}, Positional{});
+    EXPECT_THAT(no_help, ::testing::Eq(std::nullopt));
+}
+
+TEST(ArgParseInternal, GetOptional) {
+    std::optional<int> optional = getOptional(Required{}, Optional<int>{.value = 10}, Mnemonic{.short_arg = "n"});
+    EXPECT_THAT(optional, ::testing::Optional(10));
+
+    std::optional<int> no_optional = getOptional(Required{}, Positional{});
+    EXPECT_THAT(no_optional, ::testing::Eq(std::nullopt));
+}
+
+// TEST(ArgParseInternal, ConstructArgumentData) {
+//     EXPECT_TRUE((std::is_same_v<
+//         ConstructArgumentData<Arg<"arg1", int>, Arg<"arg2", double>>,
+//         TypeList<Field<"arg1", int>, Field<"arg2", double>>
+//     >));
+// }

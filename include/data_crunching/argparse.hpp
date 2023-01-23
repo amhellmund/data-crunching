@@ -24,56 +24,40 @@
 #include "data_crunching/internal/type_list.hpp"
 #include "data_crunching/internal/utils.hpp"
 
+#include "data_crunching/internal/argparse.hpp"
+
 #include <exception>
 
 namespace dacr {
 
-struct Mnemonic {
-    std::string short_arg;
-};
+// ############################################################################
+// Trait: Spec functions
+// ############################################################################
 
 inline auto mnemonic(std::string_view str) {
-    return Mnemonic{.short_arg {str}};
+    return internal::Mnemonic{.short_arg {str}};
 }
 
-struct Positional {
-};
 
 inline auto positional() {
-    return Positional{};
+    return internal::Positional{};
 }
-
-struct Required {  
-};
 
 inline auto required() {
-    return Required{};
+    return internal::Required{};
 }
-
-struct Help {
-    std::string text;
-};
 
 inline auto help (std::string_view str) {
-    return Help{.text {str}};
+    return internal::Help{.text {str}};
 }
-
-template <typename T>
-struct Optional {
-    T value;
-};
 
 template <typename T>
 inline auto optional(T&& value) {
-    return Optional<T>{.value = std::forward<T>(value)};
+    return internal::Optional<T>{.value = std::forward<T>(value)};
 }
 
-struct Store {
-    bool store{true};
-};
-
 inline auto store(bool value) {
-    return Store{.store = value};
+    return internal::Store{.value = value};
 }
 
 template <typename F, typename ...Rest>
@@ -510,6 +494,48 @@ private:
 
 template <typename ...CtorArgs>
 ArgumentParser(CtorArgs&& ...args) -> ArgumentParser<CtorArgs...>;
+
+template <typename CommonArgs, typename ...Commmands>
+struct CommandParser;
+
+template <FixedString Name, typename SubParser, typename Func>
+struct Command {
+    Command(SubParser&& sub_parser, Func&& func) {
+
+    }
+};
+
+template <FixedString Name, typename SubParser, typename Func>
+auto command(SubParser&& sub_parser, Func&& func) {
+    return Command<Name, SubParser, Func>(std::forward<SubParser>(sub_parser), std::forward<Func>(func));
+}
+
+template <typename ...>
+struct IsValidCommandImpl : std::true_type {};
+
+template <typename CommonArgs, typename ...Commands, typename ...RestCommands>
+struct IsValidCommandImpl<CommandParser<CommonArgs, Commands...>, RestCommands...> {
+    static constexpr bool value = IsValidCommandImpl<RestCommands...>::value;
+};
+
+template <FixedString Name, typename ArgumentParser, typename Func, typename ...RestCommands>
+struct IsValidCommandImpl<Command<Name, ArgumentParser, Func>> {
+    static constexpr bool value = IsValidCommandImpl<RestCommands...>::value;
+};
+
+template <typename ...Commands>
+inline constexpr bool is_valid_command = IsValidCommandImpl<Commands...>::value;
+
+template <typename CommonArgs, typename ...Commands>
+struct CommandParser {
+    static_assert(is_valid_command<Commands...>);
+
+    template <typename CtorCommonArgs, typename ...CtorCommands>
+    CommandParser(CtorCommonArgs&& common_args, CtorCommands&& ...commands) {};
+};
+
+template <typename CtorCommonArgs, typename ...CtorCommands>
+CommandParser(CtorCommonArgs&&, CtorCommands&&...) -> CommandParser<CtorCommonArgs, CtorCommands...>;
 
 } // namespace dacr
 

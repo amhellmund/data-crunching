@@ -4,6 +4,7 @@ cc_library(
         "include/data_crunching/argparse.hpp",
         "include/data_crunching/dataframe.hpp",
         "include/data_crunching/namedtuple.hpp",
+        "include/data_crunching/internal/argparse.hpp",
         "include/data_crunching/internal/column.hpp",
         "include/data_crunching/internal/dataframe_general.hpp",
         "include/data_crunching/internal/dataframe_print.hpp",

@@ -30,6 +30,17 @@ std::ostream& operator<< (std::ostream& os, const Namespace& ns) {
 }
 
 int main (int argc, char*argv[]) {
+    auto cmdparser = CommandParser(
+        command<"sub1">(
+            ArgumentParser(
+                Arg<"namespace", std::string>()
+            ),
+            [](auto data) {
+
+            }
+        )
+    );
+
     auto argparser = ArgumentParser(
         Arg<"namespace", Namespace>(mnemonic("n"), help("The namespace"), optional("abc")),
         Arg<"switch", bool>(mnemonic("s"), help("Help text"), store(true)),
