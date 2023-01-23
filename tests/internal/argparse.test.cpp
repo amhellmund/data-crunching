@@ -44,9 +44,86 @@ TEST(ArgParseInternal, GetOptional) {
     EXPECT_THAT(no_optional, ::testing::Eq(std::nullopt));
 }
 
-// TEST(ArgParseInternal, ConstructArgumentData) {
-//     EXPECT_TRUE((std::is_same_v<
-//         ConstructArgumentData<Arg<"arg1", int>, Arg<"arg2", double>>,
-//         TypeList<Field<"arg1", int>, Field<"arg2", double>>
-//     >));
-// }
+TEST(ArgParseInternal, GetStore) {
+    auto store = getStore(Store{.value = false}, Optional<int>{.value = 10}, Mnemonic{.short_arg = "n"});
+    EXPECT_THAT(store, ::testing::Optional(false));
+
+    auto no_store = getStore(Required{}, Positional{});
+    EXPECT_THAT(no_store, ::testing::Eq(std::nullopt));
+}
+
+TEST(ArgParseInternal, IsSpecContainedInSpecs) {
+    EXPECT_TRUE((is_spec_contained_in_specs<Positional, Positional>));
+    EXPECT_TRUE((is_spec_contained_in_specs<Required, Positional, Required>));
+    EXPECT_TRUE((is_spec_contained_in_specs<Store, Positional, Store, Required>));
+
+    EXPECT_FALSE((is_spec_contained_in_specs<Positional, Required>));
+    EXPECT_FALSE((is_spec_contained_in_specs<Required, Positional, Store>));
+    EXPECT_FALSE((is_spec_contained_in_specs<Store, Positional, Help, Required>));
+}
+
+TEST(ArgParseInternal, SpecForArgImpl) {
+    EXPECT_TRUE((is_valid_spec_for_arg<Help>));
+    EXPECT_TRUE((is_valid_spec_for_arg<Mnemonic>));
+    EXPECT_TRUE((is_valid_spec_for_arg<Optional<int>>));
+    EXPECT_TRUE((is_valid_spec_for_arg<Positional>));
+
+    EXPECT_FALSE((is_valid_spec_for_arg<Required>));
+    EXPECT_FALSE((is_valid_spec_for_arg<Store>));    
+}
+
+TEST(ArgParseInternal, SpecForOptionalArg) {
+    EXPECT_TRUE((is_valid_spec_for_optional_arg<Help>));
+    EXPECT_TRUE((is_valid_spec_for_optional_arg<Mnemonic>));
+
+    EXPECT_FALSE((is_valid_spec_for_optional_arg<Optional<int>>));
+    EXPECT_FALSE((is_valid_spec_for_optional_arg<Positional>));
+    EXPECT_FALSE((is_valid_spec_for_optional_arg<Required>));
+    EXPECT_FALSE((is_valid_spec_for_optional_arg<Store>));    
+}
+
+TEST(ArgParseInternal, SpecForSwitchArg) {
+    EXPECT_TRUE((is_valid_spec_for_switch_arg<Help>));
+    EXPECT_TRUE((is_valid_spec_for_switch_arg<Mnemonic>));
+    EXPECT_TRUE((is_valid_spec_for_switch_arg<Store>));  
+
+    EXPECT_FALSE((is_valid_spec_for_switch_arg<Optional<int>>));
+    EXPECT_FALSE((is_valid_spec_for_switch_arg<Positional>));
+    EXPECT_FALSE((is_valid_spec_for_switch_arg<Required>));
+}
+
+TEST(ArgParseInternal, SpecForNAryArg) {
+    EXPECT_TRUE((is_valid_spec_for_n_ary_arg<Help>));
+    EXPECT_TRUE((is_valid_spec_for_n_ary_arg<Mnemonic>));
+    EXPECT_TRUE((is_valid_spec_for_n_ary_arg<Positional>));
+    EXPECT_TRUE((is_valid_spec_for_n_ary_arg<Required>));
+      
+    EXPECT_FALSE((is_valid_spec_for_n_ary_arg<Optional<int>>));
+    EXPECT_FALSE((is_valid_spec_for_n_ary_arg<Store>));
+}
+
+TEST(ArgParseInternal, Optional) {
+    EXPECT_TRUE((is_optional<std::optional<int>>));
+      
+    EXPECT_FALSE((is_optional<int>));
+}
+
+TEST(ArgParseInternal, GetArgCommonData) {
+    auto arg_common_data = getArgCommonData("arg", 
+        Help{.text = "help"},
+        Mnemonic{.short_arg = "a"},
+        Positional{},
+        Required{}
+    );
+    EXPECT_THAT(arg_common_data.help, ::testing::Optional(std::string{"help"}));
+    EXPECT_THAT(arg_common_data.mnemonic, ::testing::Optional(std::string{"-a"}));
+    EXPECT_TRUE(arg_common_data.is_positional);
+    EXPECT_TRUE(arg_common_data.is_required);
+}
+
+TEST(ArgParseInternal, ConstructArgumentData) {
+    EXPECT_TRUE((std::is_same_v<
+        ConstructArgumentData<Arg<"arg1", int>, Arg<"arg2", double>>,
+        TypeList<Field<"arg1", int>, Field<"arg2", double>>
+    >));
+}
