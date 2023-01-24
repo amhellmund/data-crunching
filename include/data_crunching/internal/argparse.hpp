@@ -19,10 +19,16 @@
 
 #include "data_crunching/internal/fixed_string.hpp"
 #include "data_crunching/namedtuple.hpp"
+#include "data_crunching/internal/type_conversion.hpp"
 #include "data_crunching/internal/type_list.hpp"
 #include "data_crunching/internal/utils.hpp"
 
-namespace dacr::internal {
+namespace dacr {
+
+namespace internal {
+
+template <FixedString Name, typename Type>
+class ArgImpl;
 
 // ############################################################################
 // Trait: Spec classes
@@ -53,32 +59,30 @@ struct Store {
 // ############################################################################
 // Trait: Get Mnemonic
 // ############################################################################
+std::optional<std::string> getMnemonic () {
+    return std::nullopt;
+}
+
 template <typename FirstSpec, typename ...RestSpecs>
 std::optional<std::string> getMnemonic (FirstSpec first_spec, RestSpecs ...rest_specs) {
-    if constexpr (sizeof...(RestSpecs) > 0) {
-        return getMnemonic(rest_specs...);
-    }
-    else {
-        return std::nullopt;
-    }
+    return getMnemonic(rest_specs...);
 }
 
 template <typename ...RestSpecs>
 std::optional<std::string> getMnemonic(Mnemonic mnemonic, RestSpecs ...rest_specs) {
-    return std::string("-") + mnemonic.short_arg;
+    return mnemonic.short_arg;
 }
 
 // ############################################################################
 // Trait: Get Help
 // ############################################################################
+std::optional<std::string> getHelp () {
+    return std::nullopt;
+}
+
 template <typename FirstSpec, typename ...RestSpecs>
 std::optional<std::string> getHelp (FirstSpec first_spec, RestSpecs ...rest_specs) {
-    if constexpr (sizeof...(RestSpecs) > 0) {
-        return getHelp(rest_specs...);
-    }
-    else {
-        return std::nullopt;
-    }
+    return getHelp(rest_specs...);
 }
 
 template <typename ...RestSpecs>
@@ -89,14 +93,13 @@ std::optional<std::string> getHelp(Help help, RestSpecs ...rest_specs) {
 // ############################################################################
 // Trait: Get Optional
 // ############################################################################
+auto getOptional () {
+    return std::nullopt;
+}
+
 template <typename FirstSpec, typename ...RestSpecs>
 auto getOptional (FirstSpec first_spec, RestSpecs ...rest_specs) {
-    if constexpr (sizeof...(RestSpecs) > 0) {
-        return getOptional(rest_specs...);
-    }
-    else {
-        return std::nullopt;
-    }
+    return getOptional(rest_specs...);
 }
 
 template <typename T, typename ...RestSpecs>
@@ -298,34 +301,39 @@ auto getArgCommonData (const std::string& arg_name, Specs&& ...specs) {
     if constexpr (is_spec_contained_in_specs<Required, Specs...>) {
         result.is_required = true;
     }
-    result.arg_name = "--" + arg_name;
+    result.arg_name = arg_name;
     return result;
 }
 
 // ############################################################################
 // Utilities
 // ############################################################################
-inline bool hasMatch (const std::string& arg, const ArgCommonData& common_arg_data) {
-    return (arg == common_arg_data.arg_name) or (common_arg_data.mnemonic.has_value() and arg == *common_arg_data.mnemonic);
+inline bool isPositionalArgument (const std::string& arg) {
+    return (not arg.starts_with("-"));
 }
 
-inline bool isPositional (const std::string& arg) {
-    return (not arg.starts_with("-"));
+inline bool isArgumentMatched (const std::string& arg, const ArgCommonData& common_arg_data) {
+    if (arg.size() > 2 and arg.starts_with("--")) {
+        return arg.substr(2) == common_arg_data.arg_name;
+    }
+    else if (arg.size() > 1 and arg.starts_with("-")) {
+        std::cout << "arg: " << arg.substr(1) << "\n";
+        std::cout << "men: " << *common_arg_data.mnemonic << "\n";
+        return common_arg_data.mnemonic.has_value() and arg.substr(1) == *common_arg_data.mnemonic;
+    }
+    return false;
 }
 
 // ############################################################################
 // Trait: Construct Argument Data (TypeList)
 // ############################################################################
-template <FixedString Name, typename Type>
-struct Arg;
-
 template <typename ...>
 struct ConstructArgumentDataImpl {
     using type = TypeList<>;
 };
 
 template <FixedString FirstArgName, typename FirstArgType, typename ...RestArgs>
-struct ConstructArgumentDataImpl<Arg<FirstArgName, FirstArgType>, RestArgs...> {
+struct ConstructArgumentDataImpl<ArgImpl<FirstArgName, FirstArgType>, RestArgs...> {
     using type = TypeListPrepend<
         Field<FirstArgName, FirstArgType>,
         typename ConstructArgumentDataImpl<RestArgs...>::type
@@ -335,6 +343,173 @@ struct ConstructArgumentDataImpl<Arg<FirstArgName, FirstArgType>, RestArgs...> {
 template <typename ...Args>
 using ConstructArgumentData = typename ConstructArgumentDataImpl<Args...>::type;
 
-} // namespace dacr::internal
+// ############################################################################
+// Class: Argument Consumption
+// ############################################################################
+struct ArgConsumption {
+    enum class Status {
+        ERROR = -1,
+        NO_MATCH = 0,
+        MATCH = 1,
+    };
+
+    Status status;
+    int consume_count{-1};
+    std::string error_message{};
+};
+
+// ############################################################################
+// Class: Argument
+// ############################################################################
+template <FixedString Name, typename Type>
+class ArgImpl;
+
+template <FixedString Name, internal::TypeForArg Type>
+class ArgImpl<Name, Type> {
+public:
+    template <internal::SpecForArg ...Specs>
+    ArgImpl (Specs&& ...specs) : common_data{getArgCommonData(Name.toString(), specs...)} {
+        auto optional = getOptional(specs...);
+        if constexpr (not std::is_same_v<decltype(optional), std::nullopt_t>) {
+            value = optional;
+        }
+        else {
+            common_data.is_required = true;
+        }
+    }
+
+    internal::ArgConsumption consume (const std::vector<std::string>& args, int pos) {
+        if (common_data.is_positional and isPositionalArgument(args[pos])) {
+            auto converted_arg = TypeConversion<Type>::fromString(args[pos]);
+            if (converted_arg.has_value()) {
+                value = *converted_arg;
+            }
+            else {
+                return {.status = ArgConsumption::Status::ERROR, .error_message = "argument conversion failed"};
+            }
+            common_data.is_matched = true;
+            return {.status = ArgConsumption::Status::MATCH, .consume_count = 1};
+        }
+        else if (isArgumentMatched(args[pos], common_data)) {
+            if (pos + 1 >= args.size()) {
+                return {.status = ArgConsumption::Status::ERROR, .error_message = "missing argument"};
+            }
+            auto converted_arg = TypeConversion<Type>::fromString(args[pos + 1]);
+            if (converted_arg.has_value()) {
+                value = *converted_arg;
+            }
+            else {
+                return {.status = ArgConsumption::Status::ERROR, .error_message = "argument conversion failed"};
+            }
+            common_data.is_matched = true;
+            return {.status = ArgConsumption::Status::MATCH, .consume_count = 2};
+        }
+        return {.status = ArgConsumption::Status::NO_MATCH};
+    }
+    
+    // template <typename NamedTuple>
+    // void storeResult (NamedTuple& nt) {
+    //     nt.template get<Name>() = *value;
+    // }
+    auto getValue () const {
+        return value;
+    }
+
+private:
+    internal::ArgCommonData common_data{};
+    std::optional<Type> value{};
+};
+
+// template <FixedString Name, TypeForOptionalArg Type>
+// struct Arg<Name, std::optional<Type>> {
+
+//     template <SpecForOptionalArg ...Specs>
+//     Arg (Specs&& ...specs) : common_data{getArgCommonData(Name.toString(), specs...)} {}
+
+//     // std::optional<int> consume (const std::vector<std::string>& args, int pos) {
+//     //     if (hasMatch(args[pos], common_data)) {
+//     //         if (pos + 1 >= args.size()) {
+//     //             // missing arguments
+//     //             // throw exception
+//     //         }
+//     //         value = args[pos+1];
+//     //         common_data.has_match = true;
+//     //         return 2;
+//     //     }
+//     //     return std::nullopt;
+//     // }
+
+//     // template <typename NamedTuple>
+//     // void storeResult (NamedTuple& nt) {
+//     //     nt.template get<Name>() = value;
+//     // }
+
+//     ArgCommonData common_data{};
+//     std::optional<Type> value{};
+// };
+
+// template <FixedString Name>
+// struct Arg<Name, bool> {
+//     template <SpecForSwitch ...Specs>
+//     Arg (Specs&& ...specs) : common_data{getArgCommonData(Name.toString(), specs...)} {
+//         value = not GetStore(options...);
+//     }
+
+//     // std::optional<int> consume (const std::vector<std::string>& args, int pos) {
+//     //     if (hasMatch(args[pos], common_data)) {
+//     //         if (not common_data.has_match) {
+//     //             value = not value;
+//     //             common_data.has_match = true;
+//     //         }
+//     //         return 1;
+//     //     }
+//     //     return std::nullopt;
+//     // }
+
+//     // template <typename NamedTuple>
+//     // void storeResult (NamedTuple& nt) {
+//     //     nt.template get<Name>() = value;
+//     // }
+
+//     ArgCommonData common_data;
+//     bool value {};
+// };
+
+// template <FixedString Name, TypeForNAryArg Type>
+// struct Arg<Name, std::vector<Type>> : ArgBase{
+//     template <SpecForNAryArg ...Specs>
+//     Arg (Specs&& ...specs) : common_data{getArgCommonData(Name.toString(), options...)} {
+//         common_data.is_n_ary = true;
+//     }
+
+//     // std::optional<int> consume (const std::vector<std::string>& args, int pos) {
+//     //     if (common_data.is_positional and isPositional(args[pos])) {
+//     //         values.push_back(std::stoi(args[pos]));
+//     //         common_data.has_match = true;
+//     //         return 1;
+//     //     }
+//     //     else if (hasMatch(args[pos], common_data)) {
+//     //         if (pos + 1 >= args.size()) {
+//     //             // missing arguments
+//     //             // throw exception
+//     //         }
+//     //         values.push_back(std::stoi(args[pos]));
+//     //         return 2;
+//     //     }
+//     //     return std::nullopt;
+//     // }
+
+//     // template <typename NamedTuple>
+//     // void storeResult (NamedTuple& nt) {
+//     //     nt.template get<Name>() = values;
+//     // }
+
+//     ArgCommonData common_data;
+//     std::vector<Type> values;
+// };
+
+} // namespace internal
+
+} // namespace dacr
 
 #endif // DATA_CRUNCHING_INTERNAL_ARGPARSE_HPP

@@ -15,6 +15,7 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 
+#include "data_crunching/argparse.hpp"
 #include "data_crunching/internal/argparse.hpp"
 
 using namespace dacr;
@@ -22,7 +23,7 @@ using namespace dacr::internal;
 
 TEST(ArgParseInternal, GetMnemonic) {
     auto mnemonic = getMnemonic(Required{}, Mnemonic{.short_arg = "n"});
-    EXPECT_THAT(mnemonic, ::testing::Optional(std::string{"-n"}));
+    EXPECT_THAT(mnemonic, ::testing::Optional(std::string{"n"}));
 
     auto no_mnemonic = getMnemonic(Required{}, Positional{});
     EXPECT_THAT(no_mnemonic, ::testing::Eq(std::nullopt));
@@ -116,14 +117,54 @@ TEST(ArgParseInternal, GetArgCommonData) {
         Required{}
     );
     EXPECT_THAT(arg_common_data.help, ::testing::Optional(std::string{"help"}));
-    EXPECT_THAT(arg_common_data.mnemonic, ::testing::Optional(std::string{"-a"}));
+    EXPECT_THAT(arg_common_data.mnemonic, ::testing::Optional(std::string{"a"}));
     EXPECT_TRUE(arg_common_data.is_positional);
     EXPECT_TRUE(arg_common_data.is_required);
 }
 
 TEST(ArgParseInternal, ConstructArgumentData) {
     EXPECT_TRUE((std::is_same_v<
-        ConstructArgumentData<Arg<"arg1", int>, Arg<"arg2", double>>,
+        ConstructArgumentData<ArgImpl<"arg1", int>, ArgImpl<"arg2", double>>,
         TypeList<Field<"arg1", int>, Field<"arg2", double>>
     >));
+}
+
+TEST(ArgParseInternal, IsArgumentMatched) {
+    ArgCommonData common_data {.arg_name = "arg", .mnemonic = "a"};
+
+    EXPECT_TRUE(isArgumentMatched("--arg", common_data));
+    EXPECT_TRUE(isArgumentMatched("-a", common_data));
+
+    EXPECT_FALSE(isArgumentMatched("--other", common_data));
+    EXPECT_FALSE(isArgumentMatched("-o", common_data));
+}
+
+TEST(ArgParseInternal, IsPositionalArgument) {
+    EXPECT_TRUE(isPositionalArgument("arg"));
+
+    EXPECT_FALSE(isPositionalArgument("--arg"));
+    EXPECT_FALSE(isPositionalArgument("-a"));
+}
+
+auto isArgumentConsumption (ArgConsumption::Status status, int consume_count = -1, std::string error_message = "") {
+    return ::testing::AllOf(
+        ::testing::Field(&ArgConsumption::status, ::testing::Eq(status)),
+        ::testing::Field(&ArgConsumption::consume_count, ::testing::Eq(consume_count)),
+        ::testing::Field(&ArgConsumption::error_message, ::testing::Eq(error_message))
+    );
+}
+
+TEST(ArgParse, ArgumentConsume) {
+    ArgImpl<"arg", int> arg{};
+    EXPECT_THAT(arg.consume({"--arg", "10"}, 0), isArgumentConsumption(ArgConsumption::Status::MATCH, 2));
+    EXPECT_THAT(arg.getValue(), ::testing::Optional(10));
+
+    ArgImpl<"arg", int> arg_mnemonic{mnemonic("a")};
+    EXPECT_THAT(arg_mnemonic.consume({"-a", "10"}, 0), isArgumentConsumption(ArgConsumption::Status::MATCH, 2));
+    EXPECT_THAT(arg_mnemonic.getValue(), ::testing::Optional(10));
+
+    EXPECT_THAT(arg_mnemonic.consume({"-b", "10"}, 0), isArgumentConsumption(ArgConsumption::Status::NO_MATCH));
+
+    EXPECT_THAT(arg_mnemonic.consume({"--arg"}, 0), isArgumentConsumption(ArgConsumption::Status::ERROR, -1, "missing argument"));
+    EXPECT_THAT(arg_mnemonic.consume({"-a"}, 0), isArgumentConsumption(ArgConsumption::Status::ERROR, -1, "missing argument"));
 }
