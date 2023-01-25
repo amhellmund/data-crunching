@@ -26,25 +26,27 @@ namespace internal {
 // ############################################################################{
 template <typename T>
 struct TypeConversion {
-    static std::optional<T> fromString (const std::string& str) {
-        try {
-            return T{str};
-        } catch (...) {
-            return std::nullopt;
-        }
+    static T fromString (const std::string& str) {
+        return T{str};
     }
 };
 
 template <>
 struct TypeConversion<int> {
-    static std::optional<int> fromString (const std::string& str) {
-        try {
-            return std::stoi(str);
-        } catch (...) {
-            return std::nullopt;
-        }
+    static int fromString (const std::string& str) {
+        return std::stoi(str);
     }
 };
+
+template <typename T>
+auto convertFromString (const std::string& str) -> std::optional<T> {
+    try {
+        return TypeConversion<T>::fromString(str);
+    }
+    catch (...) {
+        return std::nullopt;
+    }
+}
 
 } // namespace internal
 

@@ -154,17 +154,56 @@ auto isArgumentConsumption (ArgConsumption::Status status, int consume_count = -
     );
 }
 
-TEST(ArgParse, ArgumentConsume) {
+TEST(ArgParseInternal, ArgConsume) {
+    ArgImpl<"arg", int> arg{};
+    EXPECT_THAT(arg.consume({"--arg", "10"}, 0), isArgumentConsumption(ArgConsumption::Status::MATCH, 2));
+    EXPECT_THAT(arg.getValue(), ::testing::Optional(10));
+}
+
+TEST(ArgParseInternal, ArgConsumeTwice) {
     ArgImpl<"arg", int> arg{};
     EXPECT_THAT(arg.consume({"--arg", "10"}, 0), isArgumentConsumption(ArgConsumption::Status::MATCH, 2));
     EXPECT_THAT(arg.getValue(), ::testing::Optional(10));
 
+    EXPECT_THAT(arg.consume({"--arg", "20"}, 0), isArgumentConsumption(ArgConsumption::Status::MATCH, 2));
+    EXPECT_THAT(arg.getValue(), ::testing::Optional(20));
+}
+
+TEST(ArgParseInternal, ArgConsumeConversionFailure) {
+    ArgImpl<"arg", int> arg{};
+    EXPECT_THAT(arg.consume({"--arg", "cde"}, 0), isArgumentConsumption(ArgConsumption::Status::ERROR, -1, "argument conversion failed"));
+}
+
+TEST(ArgParseInternal, ArgConsumeMnemonic) {
     ArgImpl<"arg", int> arg_mnemonic{mnemonic("a")};
     EXPECT_THAT(arg_mnemonic.consume({"-a", "10"}, 0), isArgumentConsumption(ArgConsumption::Status::MATCH, 2));
     EXPECT_THAT(arg_mnemonic.getValue(), ::testing::Optional(10));
 
     EXPECT_THAT(arg_mnemonic.consume({"-b", "10"}, 0), isArgumentConsumption(ArgConsumption::Status::NO_MATCH));
+}
 
+TEST(ArgParseInternal, ArgConsumeMissingArgument) {
+    ArgImpl<"arg", int> arg_mnemonic{mnemonic("a")};
     EXPECT_THAT(arg_mnemonic.consume({"--arg"}, 0), isArgumentConsumption(ArgConsumption::Status::ERROR, -1, "missing argument"));
     EXPECT_THAT(arg_mnemonic.consume({"-a"}, 0), isArgumentConsumption(ArgConsumption::Status::ERROR, -1, "missing argument"));
+}
+
+TEST(ArgParseInternal, ArgConsumePositional) {
+    ArgImpl<"arg", int> arg_positional{positional()};
+    EXPECT_THAT(arg_positional.consume({"10"}, 0), isArgumentConsumption(ArgConsumption::Status::MATCH, 1));
+    EXPECT_THAT(arg_positional.getValue(), ::testing::Optional(10));
+}
+
+TEST(ArgParseInternal, ArgConsumePositionalConversionFailure) {
+    ArgImpl<"arg", int> arg_positional{positional()};
+    EXPECT_THAT(arg_positional.consume({"cde"}, 0), isArgumentConsumption(ArgConsumption::Status::ERROR, -1, "argument conversion failed"));
+}
+
+TEST(ArgParseInternal, ArgConsumePositionalTwice) {
+    ArgImpl<"arg", int> arg_positional{positional()};
+    EXPECT_THAT(arg_positional.consume({"10"}, 0), isArgumentConsumption(ArgConsumption::Status::MATCH, 1));
+    EXPECT_THAT(arg_positional.getValue(), ::testing::Optional(10));
+
+    EXPECT_THAT(arg_positional.consume({"20"}, 0), isArgumentConsumption(ArgConsumption::Status::NO_MATCH));
+    EXPECT_THAT(arg_positional.getValue(), ::testing::Optional(10));
 }
