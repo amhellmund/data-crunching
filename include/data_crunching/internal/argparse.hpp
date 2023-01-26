@@ -110,18 +110,17 @@ auto getOptional(Optional<T> optional, RestSpecs ...rest_specs) {
 // ############################################################################
 // Trait: Get Store
 // ############################################################################
+bool getStore () {
+    return true;
+}
+
 template <typename FirstSpec, typename ...RestSpecs>
-std::optional<bool> getStore (FirstSpec first_spec, RestSpecs ...rest_specs) {
-    if constexpr(sizeof...(RestSpecs) > 0) {
-        return getStore(rest_specs...);
-    }
-    else {
-        return std::nullopt;
-    }
+bool getStore (FirstSpec first_spec, RestSpecs ...rest_specs) {
+    return getStore(rest_specs...);
 }
 
 template <typename ...RestSpecs>
-std::optional<bool> getStore(Store store, RestSpecs ...rest_specs) {
+bool getStore(Store store, RestSpecs ...rest_specs) {
     return store.value;
 }
 
@@ -357,38 +356,31 @@ struct ArgConsumption {
 };
 
 // ############################################################################
-// Class: Argument
+// Utilities: Argument
 // ############################################################################
 template <FixedString Name, typename Type>
 class ArgImpl;
 
 template <typename T>
-internal::ArgConsumption consumePositional (std::optional<T>& value, ArgCommonData& common_data, const std::string& arg) {
-    if (not common_data.is_matched) {
-        auto converted_arg = convertFromString<T>(arg);
-        if (converted_arg.has_value()) {
-            value = *converted_arg;
-            common_data.is_matched = true;
-            return {.status = ArgConsumption::Status::MATCH, .consume_count = 1};
-        }
-        else {
-            return {.status = ArgConsumption::Status::ERROR, .error_message = "argument conversion failed"};
-        }
-        }
+internal::ArgConsumption consumePositional (std::optional<T>& value, const std::string& arg) {
+    auto converted_arg = convertFromString<T>(arg);
+    if (converted_arg.has_value()) {
+        value = *converted_arg;
+        return {.status = ArgConsumption::Status::MATCH, .consume_count = 1};
+    }
     else {
-        return {.status = ArgConsumption::Status::NO_MATCH};
+        return {.status = ArgConsumption::Status::ERROR, .error_message = "argument conversion failed"};
     }
 }
 
 template <typename T>
-internal::ArgConsumption consumeArgument (std::optional<T>& value, ArgCommonData& common_data, const std::vector<std::string>& args, int pos) {
+internal::ArgConsumption consumeArgument (std::optional<T>& value, const std::vector<std::string>& args, int pos) {
     if (pos + 1 >= args.size()) {
         return {.status = ArgConsumption::Status::ERROR, .error_message = "missing argument"};
     }
     auto converted_arg = convertFromString<T>(args[pos + 1]);
     if (converted_arg.has_value()) {
         value = *converted_arg;
-        common_data.is_matched = true;
         return {.status = ArgConsumption::Status::MATCH, .consume_count = 2};
     }
     else {
@@ -396,6 +388,9 @@ internal::ArgConsumption consumeArgument (std::optional<T>& value, ArgCommonData
     }
 }
 
+// ############################################################################
+// Class: Argument
+// ############################################################################
 template <FixedString Name, internal::TypeForArg Type>
 class ArgImpl<Name, Type> {
 public:
@@ -412,10 +407,14 @@ public:
 
     internal::ArgConsumption consume (const std::vector<std::string>& args, int pos) {
         if (common_data.is_positional and isPositionalArgument(args[pos])) {
-            return consumePositional(value, common_data, args[pos]);
+            if (not common_data.is_matched) {
+                common_data.is_matched = true;
+                return consumePositional(value, args[pos]);
+            }
         }
         else if (isArgumentMatched(args[pos], common_data)) {
-            return consumeArgument(value, common_data, args, pos);
+            common_data.is_matched = true;
+            return consumeArgument(value, args, pos);
         }
         return {.status = ArgConsumption::Status::NO_MATCH};
     }
@@ -434,6 +433,9 @@ private:
     std::optional<Type> value{};
 };
 
+// ############################################################################
+// Class: Optional Argument
+// ############################################################################
 template <FixedString Name, TypeForOptionalArg Type>
 class ArgImpl<Name, std::optional<Type>> {
 public:
@@ -442,7 +444,8 @@ public:
 
     internal::ArgConsumption consume (const std::vector<std::string>& args, int pos) {
         if (isArgumentMatched(args[pos], common_data)) {
-            return consumeArgument(value, common_data, args, pos);
+            common_data.is_matched = true;
+            return consumeArgument(value, args, pos);
         }
         return {.status = ArgConsumption::Status::NO_MATCH};
     }
@@ -461,6 +464,9 @@ private:
     std::optional<Type> value{};
 };
 
+// ############################################################################
+// Class: Switch Argument
+// ############################################################################
 template <FixedString Name>
 class ArgImpl<Name, bool> {
 public:
@@ -485,37 +491,60 @@ public:
         nt.template get<Name>() = value;
     }
 
+    bool getValue () const {
+        return value;
+    }
+
 private:
     ArgCommonData common_data;
     bool value {};
 };
 
-// template <FixedString Name, TypeForNAryArg Type>
-// class Arg<Name, std::vector<Type>> {
-//     template <SpecForNAryArg ...Specs>
-//     Arg (Specs&& ...specs) : common_data{getArgCommonData(Name.toString(), specs...)} {
-//         common_data.is_n_ary = true;
-//     }
+// ############################################################################
+// Class: N-Ary Argument
+// ############################################################################
+template <FixedString Name, TypeForNAryArg Type>
+class ArgImpl<Name, std::vector<Type>> {
+public:
+    template <SpecForNAryArg ...Specs>
+    ArgImpl (Specs&& ...specs) : common_data{getArgCommonData(Name.toString(), specs...)} {
+        common_data.is_n_ary = true;
+        common_data.is_required = common_data.is_required || common_data.is_positional;
+    }
 
-//     internal::ArgConsumption consume (const std::vector<std::string>& args, int pos) {
-//         if (common_data.is_positional and isPositionalArgument(args[pos])) {
-//             return consumePositional(value, common_data, args[pos]);
-//         }
-//         else if (isArgumentMatched(args[pos], common_data)) {
-//             return consumeArgument(value, common_data, args, pos);
-//         }
-//         return {.status = ArgConsumption::Status::NO_MATCH};
-//     }
+    internal::ArgConsumption consume (const std::vector<std::string>& args, int pos) {
+        if (common_data.is_positional and isPositionalArgument(args[pos])) {
+            std::optional<Type> value;
+            auto result = consumePositional(value, args[pos]);
+            if (result.status == ArgConsumption::Status::MATCH and value.has_value()) {
+                values.push_back(*value);
+            }
+            return result;
+        }
+        else if (isArgumentMatched(args[pos], common_data)) {
+            std::optional<Type> value;
+            auto result = consumeArgument(value, args, pos);
+            if (result.status == ArgConsumption::Status::MATCH and value.has_value()) {
+                values.push_back(*value);
+            }
+            return result;
+        }
+        return {.status = ArgConsumption::Status::NO_MATCH};
+    }
 
-//     template <typename NamedTuple>
-//     void storeResult (NamedTuple& nt) {
-//         nt.template get<Name>() = values;
-//     }
+    template <typename NamedTuple>
+    void storeResult (NamedTuple& nt) {
+        nt.template get<Name>() = values;
+    }
 
-// private:
-//     ArgCommonData common_data;
-//     std::vector<Type> values;
-// };
+    const std::vector<Type> getValue () const {
+        return values;
+    }
+
+private:
+    ArgCommonData common_data;
+    std::vector<Type> values;
+};
 
 } // namespace internal
 

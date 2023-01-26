@@ -47,10 +47,10 @@ TEST(ArgParseInternal, GetOptional) {
 
 TEST(ArgParseInternal, GetStore) {
     auto store = getStore(Store{.value = false}, Optional<int>{.value = 10}, Mnemonic{.short_arg = "n"});
-    EXPECT_THAT(store, ::testing::Optional(false));
+    EXPECT_FALSE(store);
 
     auto no_store = getStore(Required{}, Positional{});
-    EXPECT_THAT(no_store, ::testing::Eq(std::nullopt));
+    EXPECT_TRUE(no_store);
 }
 
 TEST(ArgParseInternal, IsSpecContainedInSpecs) {
@@ -154,6 +154,9 @@ auto isArgumentConsumption (ArgConsumption::Status status, int consume_count = -
     );
 }
 
+// ############################################################################
+// Test: Argument
+// ############################################################################
 TEST(ArgParseInternal, ArgConsume) {
     ArgImpl<"arg", int> arg{};
     EXPECT_THAT(arg.consume({"--arg", "10"}, 0), isArgumentConsumption(ArgConsumption::Status::MATCH, 2));
@@ -175,35 +178,150 @@ TEST(ArgParseInternal, ArgConsumeConversionFailure) {
 }
 
 TEST(ArgParseInternal, ArgConsumeMnemonic) {
-    ArgImpl<"arg", int> arg_mnemonic{mnemonic("a")};
-    EXPECT_THAT(arg_mnemonic.consume({"-a", "10"}, 0), isArgumentConsumption(ArgConsumption::Status::MATCH, 2));
-    EXPECT_THAT(arg_mnemonic.getValue(), ::testing::Optional(10));
+    ArgImpl<"arg", int> arg{mnemonic("a")};
+    EXPECT_THAT(arg.consume({"-a", "10"}, 0), isArgumentConsumption(ArgConsumption::Status::MATCH, 2));
+    EXPECT_THAT(arg.getValue(), ::testing::Optional(10));
 
-    EXPECT_THAT(arg_mnemonic.consume({"-b", "10"}, 0), isArgumentConsumption(ArgConsumption::Status::NO_MATCH));
+    EXPECT_THAT(arg.consume({"-b", "10"}, 0), isArgumentConsumption(ArgConsumption::Status::NO_MATCH));
 }
 
 TEST(ArgParseInternal, ArgConsumeMissingArgument) {
-    ArgImpl<"arg", int> arg_mnemonic{mnemonic("a")};
-    EXPECT_THAT(arg_mnemonic.consume({"--arg"}, 0), isArgumentConsumption(ArgConsumption::Status::ERROR, -1, "missing argument"));
-    EXPECT_THAT(arg_mnemonic.consume({"-a"}, 0), isArgumentConsumption(ArgConsumption::Status::ERROR, -1, "missing argument"));
+    ArgImpl<"arg", int> arg{mnemonic("a")};
+    EXPECT_THAT(arg.consume({"--arg"}, 0), isArgumentConsumption(ArgConsumption::Status::ERROR, -1, "missing argument"));
+    EXPECT_THAT(arg.consume({"-a"}, 0), isArgumentConsumption(ArgConsumption::Status::ERROR, -1, "missing argument"));
 }
 
 TEST(ArgParseInternal, ArgConsumePositional) {
-    ArgImpl<"arg", int> arg_positional{positional()};
-    EXPECT_THAT(arg_positional.consume({"10"}, 0), isArgumentConsumption(ArgConsumption::Status::MATCH, 1));
-    EXPECT_THAT(arg_positional.getValue(), ::testing::Optional(10));
+    ArgImpl<"arg", int> arg{positional()};
+    EXPECT_THAT(arg.consume({"10"}, 0), isArgumentConsumption(ArgConsumption::Status::MATCH, 1));
+    EXPECT_THAT(arg.getValue(), ::testing::Optional(10));
 }
 
 TEST(ArgParseInternal, ArgConsumePositionalConversionFailure) {
-    ArgImpl<"arg", int> arg_positional{positional()};
-    EXPECT_THAT(arg_positional.consume({"cde"}, 0), isArgumentConsumption(ArgConsumption::Status::ERROR, -1, "argument conversion failed"));
+    ArgImpl<"arg", int> arg{positional()};
+    EXPECT_THAT(arg.consume({"cde"}, 0), isArgumentConsumption(ArgConsumption::Status::ERROR, -1, "argument conversion failed"));
 }
 
 TEST(ArgParseInternal, ArgConsumePositionalTwice) {
-    ArgImpl<"arg", int> arg_positional{positional()};
-    EXPECT_THAT(arg_positional.consume({"10"}, 0), isArgumentConsumption(ArgConsumption::Status::MATCH, 1));
-    EXPECT_THAT(arg_positional.getValue(), ::testing::Optional(10));
+    ArgImpl<"arg", int> arg{positional()};
+    EXPECT_THAT(arg.consume({"10"}, 0), isArgumentConsumption(ArgConsumption::Status::MATCH, 1));
+    EXPECT_THAT(arg.getValue(), ::testing::Optional(10));
 
-    EXPECT_THAT(arg_positional.consume({"20"}, 0), isArgumentConsumption(ArgConsumption::Status::NO_MATCH));
-    EXPECT_THAT(arg_positional.getValue(), ::testing::Optional(10));
+    EXPECT_THAT(arg.consume({"20"}, 0), isArgumentConsumption(ArgConsumption::Status::NO_MATCH));
+    EXPECT_THAT(arg.getValue(), ::testing::Optional(10));
+}
+
+// ############################################################################
+// Test: Otional Argument
+// ############################################################################
+TEST(ArgParseInternal, OptionalArgNoValue) {
+    ArgImpl<"arg", std::optional<int>> arg{};
+    EXPECT_FALSE(arg.getValue().has_value());
+}
+
+TEST(ArgParseInternal, OptionalArgConsume) {
+    ArgImpl<"arg", std::optional<int>> arg{};
+    EXPECT_THAT(arg.consume({"--arg", "10"}, 0), isArgumentConsumption(ArgConsumption::Status::MATCH, 2));
+    EXPECT_THAT(arg.getValue(), ::testing::Optional(10));
+}
+
+TEST(ArgParseInternal, OptionalArgConsumeMnemonic) {
+    ArgImpl<"arg", std::optional<int>> arg{mnemonic("a")};
+    EXPECT_THAT(arg.consume({"-a", "10"}, 0), isArgumentConsumption(ArgConsumption::Status::MATCH, 2));
+    EXPECT_THAT(arg.getValue(), ::testing::Optional(10));
+
+    EXPECT_THAT(arg.consume({"-b", "10"}, 0), isArgumentConsumption(ArgConsumption::Status::NO_MATCH));
+}
+
+
+TEST(ArgParseInternal, OptionalArgConsumeConversionFailure) {
+    ArgImpl<"arg", std::optional<int>> arg{};
+    EXPECT_THAT(arg.consume({"--arg", "cde"}, 0), isArgumentConsumption(ArgConsumption::Status::ERROR, -1, "argument conversion failed"));
+}
+
+TEST(ArgParseInternal, OptionalArgConsumePositionalTwice) {
+    ArgImpl<"arg", std::optional<int>> arg{};
+    EXPECT_THAT(arg.consume({"--arg", "10"}, 0), isArgumentConsumption(ArgConsumption::Status::MATCH, 2));
+    EXPECT_THAT(arg.getValue(), ::testing::Optional(10));
+
+    EXPECT_THAT(arg.consume({"--arg", "20"}, 0), isArgumentConsumption(ArgConsumption::Status::MATCH, 2));
+    EXPECT_THAT(arg.getValue(), ::testing::Optional(20));
+}
+
+// ############################################################################
+// Test: Switch Argument
+// ############################################################################
+TEST(ArgParseInternal, SwitchArgNoValue) {
+    ArgImpl<"arg", bool> arg{};
+    EXPECT_FALSE(arg.getValue());
+}
+
+TEST(ArgParseInternal, SwitchArgConsume) {
+    ArgImpl<"arg", bool> arg{};
+    EXPECT_THAT(arg.consume({"--arg"}, 0), isArgumentConsumption(ArgConsumption::Status::MATCH, 1));
+    EXPECT_TRUE(arg.getValue());
+}
+
+TEST(ArgParseInternal, SwitchArgNoValueStoreFalse) {
+    ArgImpl<"arg", bool> arg{store(false)};
+    EXPECT_TRUE(arg.getValue());
+}
+
+TEST(ArgParseInternal, SwitchArgConsumeStoreFalse) {
+    ArgImpl<"arg", bool> arg{store(false)};
+    EXPECT_THAT(arg.consume({"--arg"}, 0), isArgumentConsumption(ArgConsumption::Status::MATCH, 1));
+    EXPECT_FALSE(arg.getValue());
+}
+
+TEST(ArgParseInternal, SwitchArgConsumeMnemonic) {
+    ArgImpl<"arg", bool> arg{mnemonic("a")};
+    EXPECT_THAT(arg.consume({"-a"}, 0), isArgumentConsumption(ArgConsumption::Status::MATCH, 1));
+    EXPECT_TRUE(arg.getValue());
+}
+
+// ############################################################################
+// Test: N-Ary Argument
+// ############################################################################
+TEST(ArgParseInternal, NAryArgNoValue) {
+    ArgImpl<"arg", std::vector<int>> arg{};
+    EXPECT_THAT(arg.getValue(), ::testing::ElementsAre());
+}
+
+TEST(ArgParseInternal, NAryArgConsume) {
+    ArgImpl<"arg", std::vector<int>> arg{};
+    EXPECT_THAT(arg.consume({"--arg", "10"}, 0), isArgumentConsumption(ArgConsumption::Status::MATCH, 2));
+    EXPECT_THAT(arg.getValue(), ::testing::ElementsAre(10));
+}
+
+TEST(ArgParseInternal, NAryArgConsumeMultiple) {
+    ArgImpl<"arg", std::vector<int>> arg{};
+    EXPECT_THAT(arg.consume({"--arg", "10"}, 0), isArgumentConsumption(ArgConsumption::Status::MATCH, 2));
+    EXPECT_THAT(arg.consume({"--arg", "20"}, 0), isArgumentConsumption(ArgConsumption::Status::MATCH, 2));
+    EXPECT_THAT(arg.getValue(), ::testing::ElementsAre(10, 20));
+}
+
+TEST(ArgParseInternal, NAryArgConsumeMultipleMnemonic) {
+    ArgImpl<"arg", std::vector<int>> arg{mnemonic("a")};
+    EXPECT_THAT(arg.consume({"--arg", "10"}, 0), isArgumentConsumption(ArgConsumption::Status::MATCH, 2));
+    EXPECT_THAT(arg.consume({"-a", "15"}, 0), isArgumentConsumption(ArgConsumption::Status::MATCH, 2));
+    EXPECT_THAT(arg.consume({"--arg", "20"}, 0), isArgumentConsumption(ArgConsumption::Status::MATCH, 2));
+    EXPECT_THAT(arg.getValue(), ::testing::ElementsAre(10, 15, 20));
+}
+
+TEST(ArgParseInternal, NAryArgConsumeConversionFailure) {
+    ArgImpl<"arg", std::vector<int>> arg{};
+    EXPECT_THAT(arg.consume({"--arg", "cde"}, 0), isArgumentConsumption(ArgConsumption::Status::ERROR, -1, "argument conversion failed"));
+}
+
+TEST(ArgParseInternal, NAryArgConsumePositional) {
+    ArgImpl<"arg", std::vector<int>> arg{positional()};
+    EXPECT_THAT(arg.consume({"10"}, 0), isArgumentConsumption(ArgConsumption::Status::MATCH, 1));
+    EXPECT_THAT(arg.getValue(), ::testing::ElementsAre(10));
+}
+
+TEST(ArgParseInternal, NAryArgConsumePositionalMultiple) {
+    ArgImpl<"arg", std::vector<int>> arg{positional()};
+    EXPECT_THAT(arg.consume({"10"}, 0), isArgumentConsumption(ArgConsumption::Status::MATCH, 1));
+    EXPECT_THAT(arg.consume({"15"}, 0), isArgumentConsumption(ArgConsumption::Status::MATCH, 1));
+    EXPECT_THAT(arg.getValue(), ::testing::ElementsAre(10, 15));
 }
