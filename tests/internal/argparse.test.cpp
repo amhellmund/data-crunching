@@ -325,3 +325,11 @@ TEST(ArgParseInternal, NAryArgConsumePositionalMultiple) {
     EXPECT_THAT(arg.consume({"15"}, 0), isArgumentConsumption(ArgConsumption::Status::MATCH, 1));
     EXPECT_THAT(arg.getValue(), ::testing::ElementsAre(10, 15));
 }
+
+TEST(ArgParseInternal, CollectArgCommonData) {
+    auto common_data = collectArgCommonData(ArgImpl<"abc", int>{});
+    EXPECT_EQ(common_data.size(), 1);
+
+    auto common_data_two_elements = collectArgCommonData(ArgImpl<"abc", int>{}, ArgImpl<"cde", bool>{});
+    EXPECT_EQ(common_data_two_elements.size(), 2);
+}

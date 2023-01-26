@@ -16,6 +16,7 @@
 #define DATA_CRUNCHING_INTERNAL_ARGPARSE_HPP
 
 #include <string>
+#include <deque>
 
 #include "data_crunching/internal/fixed_string.hpp"
 #include "data_crunching/namedtuple.hpp"
@@ -428,6 +429,10 @@ public:
         return value;
     }
 
+    const ArgCommonData getCommonData() const {
+        return common_data;
+    }
+
 private:
     internal::ArgCommonData common_data{};
     std::optional<Type> value{};
@@ -457,6 +462,10 @@ public:
 
     auto getValue () const {
         return value;
+    }
+
+    const ArgCommonData getCommonData() const {
+        return common_data;
     }
 
 private:
@@ -493,6 +502,10 @@ public:
 
     bool getValue () const {
         return value;
+    }
+
+    const ArgCommonData getCommonData() const {
+        return common_data;
     }
 
 private:
@@ -541,10 +554,47 @@ public:
         return values;
     }
 
+    const ArgCommonData getCommonData() const {
+        return common_data;
+    }
+
 private:
     ArgCommonData common_data;
     std::vector<Type> values;
 };
+
+// ############################################################################
+// Utility: Common Arg Data
+// ############################################################################
+template <typename LastArg>
+std::deque<ArgCommonData> collectArgCommonData (const LastArg& arg) {
+    std::deque<ArgCommonData> result;
+    result.push_front(arg.getCommonData());
+    return result;
+}
+
+template <typename FirstArg, typename ...RestArgs>
+std::deque<ArgCommonData> collectArgCommonData (const FirstArg& first_arg, const RestArgs& ...rest_args) {
+    auto result = collectArgCommonData(rest_args...);
+    result.push_front(first_arg.getCommonData());
+    return result;
+}
+
+// ############################################################################
+// Utility: Validate
+// ############################################################################
+struct ValidationResult {
+    bool success {false};
+    std::string error_message;
+};
+
+template <typename ...Args>
+ValidationResult validateArgs (const Args& ...args) {
+    auto common_data = collectArgCommonData(args...);
+    // error: all names must be unique
+    // error: all mnemonics must be unique
+    // warning: multiple positional n-ary arguments
+}
 
 } // namespace internal
 
