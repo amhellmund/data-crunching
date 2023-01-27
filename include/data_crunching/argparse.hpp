@@ -63,19 +63,6 @@ inline auto Arg (Specs&& ...specs) {
     return internal::ArgImpl<Name, T>(std::forward<Specs>(specs)...);
 }
 
-internal::ArgConsumption consumeArgument (std::vector<std::string>&, int) {
-    return {.status = internal::ArgConsumption::Status::NO_MATCH};
-}
-
-template <typename FirstArg, typename ...RestArgs>
-internal::ArgConsumption consumeArgument(std::vector<std::string>& args, int pos, FirstArg& first_arg, RestArgs& ...rest_args) {
-    auto result = first_arg.consume(args, pos);
-    if (result.status == internal::ArgConsumption::Status::MATCH) {
-        return result;
-    }
-    return consumeArgument(args, pos, rest_args...);
-}
-
 inline void exitWithError (const std::string& error_message) {
     std::cerr << "Error: " << error_message << "\n";
     std::exit(EXIT_FAILURE);
@@ -92,32 +79,49 @@ public:
         if (containsHelpOption(argc, argv)) {
             printHelpText();
         }
-        std::vector<std::string> args {argv + 1, argv + argc};
+        std::vector<std::string> arguments {argv + 1, argv + argc};
 
-        auto validation_result = std::apply(internal::validateArgs, arg_desc_);
+        auto validation_result = std::apply(
+            [](const auto& ...args) {
+                return internal::validateArgs(args...);
+            },
+            arg_desc_
+        );
         if (not validation_result.success) {
             exitWithError(validation_result.error_message);
         }
 
-        for (auto i = 0LU; i < args.size(); /* no auto increment */) {
-            auto arg_consumption = std::apply(consumeArgument, arg_desc_);
+        for (auto i = 0LU; i < arguments.size(); /* no auto increment */) {
+            auto arg_consumption = std::apply(
+                [arguments, i](auto& ...args) {
+                    return internal::consumeArgument(arguments, i, args...);
+                },
+                arg_desc_
+            );
             switch (arg_consumption.status) {
                 case internal::ArgConsumption::Status::MATCH:
                     i += arg_consumption.consume_count;
                     break;
                 case internal::ArgConsumption::Status::NO_MATCH:
-                    exitWithError("unmatched argument: " + args[i]);
+                    exitWithError("unmatched argument: " + arguments[i]);
                     break;
                 case internal::ArgConsumption::Status::ERROR:
                     exitWithError(arg_consumption.error_message);
                     break;
             }
-
         }
 
-        using ReseultType = typename internal::ConstructArgumentData<Args...>::template To<NamedTuple>;
-        ReseultType result{};
-        auto store_result = std::apply(internal::storeValue, arg_desc_);
+        using ResultType = typename internal::ConstructArgumentData<Args...>::template To<NamedTuple>;
+        ResultType result{};
+        auto store_result = std::apply(
+            [&result](const auto& ...args) {
+                return internal::storeValue(result, args...);
+            },
+            arg_desc_
+        );
+        if (not store_result.success) {
+            exitWithError(store_result.error_message);
+        }
         return result;
     }
 
@@ -136,6 +140,7 @@ private:
 
     void printHelpText () const {
         std::cout << "HELP\n";
+        std::exit(EXIT_SUCCESS);
     }
 };
 

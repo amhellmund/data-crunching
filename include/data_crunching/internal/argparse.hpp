@@ -363,7 +363,7 @@ template <FixedString Name, typename Type>
 class ArgImpl;
 
 template <typename T>
-internal::ArgConsumption consumePositional (std::optional<T>& value, const std::string& arg) {
+internal::ArgConsumption consumePositionalArgument (std::optional<T>& value, const std::string& arg) {
     auto converted_arg = convertFromString<T>(arg);
     if (converted_arg.has_value()) {
         value = *converted_arg;
@@ -375,7 +375,7 @@ internal::ArgConsumption consumePositional (std::optional<T>& value, const std::
 }
 
 template <typename T>
-internal::ArgConsumption consumeArgument (std::optional<T>& value, const std::vector<std::string>& args, int pos) {
+internal::ArgConsumption consumeDashedArgument (std::optional<T>& value, const std::vector<std::string>& args, int pos) {
     if (pos + 1 >= args.size()) {
         return {.status = ArgConsumption::Status::ERROR, .error_message = "missing argument"};
     }
@@ -415,18 +415,19 @@ public:
         if (common_data.is_positional and isPositionalArgument(args[pos])) {
             if (not common_data.is_matched) {
                 common_data.is_matched = true;
-                return consumePositional(value, args[pos]);
+                return consumePositionalArgument(value, args[pos]);
             }
         }
         else if (isArgumentMatched(args[pos], common_data)) {
             common_data.is_matched = true;
-            return consumeArgument(value, args, pos);
+            auto result = consumeDashedArgument(value, args, pos);
+            return result;
         }
         return {.status = ArgConsumption::Status::NO_MATCH};
     }
     
     template <typename NamedTuple>
-    StoreResult storeValue (NamedTuple& nt) {
+    StoreResult storeValue (NamedTuple& nt) const {
         if (common_data.is_required and not value.has_value()) {
             return {.success = false, .error_message = "argument is required but not found: " + common_data.arg_name};
         }
@@ -459,13 +460,13 @@ public:
     internal::ArgConsumption consume (const std::vector<std::string>& args, int pos) {
         if (isArgumentMatched(args[pos], common_data)) {
             common_data.is_matched = true;
-            return consumeArgument(value, args, pos);
+            return consumeDashedArgument(value, args, pos);
         }
         return {.status = ArgConsumption::Status::NO_MATCH};
     }
 
     template <typename NamedTuple>
-    StoreResult storeValue (NamedTuple& nt) {
+    StoreResult storeValue (NamedTuple& nt) const {
         nt.template get<Name>() = value;
         return {.success = true};
     }
@@ -506,7 +507,7 @@ public:
     }
 
     template <typename NamedTuple>
-    StoreResult storeValue (NamedTuple& nt) {
+    StoreResult storeValue (NamedTuple& nt) const {
         nt.template get<Name>() = value;
         return {.success = true};
     }
@@ -539,7 +540,7 @@ public:
     internal::ArgConsumption consume (const std::vector<std::string>& args, int pos) {
         if (common_data.is_positional and isPositionalArgument(args[pos])) {
             std::optional<Type> value;
-            auto result = consumePositional(value, args[pos]);
+            auto result = consumePositionalArgument(value, args[pos]);
             if (result.status == ArgConsumption::Status::MATCH and value.has_value()) {
                 values.push_back(*value);
             }
@@ -547,7 +548,7 @@ public:
         }
         else if (isArgumentMatched(args[pos], common_data)) {
             std::optional<Type> value;
-            auto result = consumeArgument(value, args, pos);
+            auto result = consumeDashedArgument(value, args, pos);
             if (result.status == ArgConsumption::Status::MATCH and value.has_value()) {
                 values.push_back(*value);
             }
@@ -557,7 +558,7 @@ public:
     }
 
     template <typename NamedTuple>
-    StoreResult storeValue (NamedTuple& nt) {
+    StoreResult storeValue (NamedTuple& nt) const {
         if (common_data.is_required and values.size() == 0) {
             return {.success = false, .error_message = "argument is required but not found: " + common_data.arg_name};
         }
@@ -680,6 +681,23 @@ StoreResult storeValue (NamedTuple& nt, const FirstArg& first_arg, const RestArg
         return result;
     }
     return storeValue(nt, rest_args...);
+}
+
+// ############################################################################
+// Utility: Consume Argument
+// ############################################################################
+template <typename LastArg>
+internal::ArgConsumption consumeArgument (const std::vector<std::string>& arguments, int pos, LastArg& last_arg) {
+    return last_arg.consume(arguments, pos);
+}
+
+template <typename FirstArg, typename ...RestArgs>
+internal::ArgConsumption consumeArgument(const std::vector<std::string>& arguments, int pos, FirstArg& first_arg, RestArgs& ...rest_args) {
+    auto result = first_arg.consume(arguments, pos);
+    if (result.status == internal::ArgConsumption::Status::MATCH) {
+        return result;
+    }
+    return consumeArgument(arguments, pos, rest_args...);
 }
 
 } // namespace internal

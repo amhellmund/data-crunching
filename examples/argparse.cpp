@@ -19,40 +19,25 @@
 using namespace dacr;
 
 struct Namespace {
-    Namespace () = default;
-    Namespace (std::string s) : a{s} {}
-    std::string a;
+    std::string name;
 };
 
 std::ostream& operator<< (std::ostream& os, const Namespace& ns) {
-    os << ns.a;
+    os << "Namespace: " << ns.name;
     return os;
 }
 
 int main (int argc, char*argv[]) {
-    auto cmdparser = CommandParser(
-        command<"sub1">(
-            ArgumentParser(
-                Arg<"namespace", std::string>()
-            ),
-            [](auto data) {
-
-            }
-        )
-    );
-
     auto argparser = ArgumentParser(
-        Arg<"namespace", Namespace>(mnemonic("n"), help("The namespace"), optional("abc")),
-        Arg<"switch", bool>(mnemonic("s"), help("Help text"), store(true)),
-        Arg<"threshold", std::optional<std::string>>(),
+        Arg<"namespace", Namespace>(mnemonic("n"), help("The namespace")),
+        Arg<"switch", bool>(mnemonic("s"), help("Help text"), store(false)),
         Arg<"input", std::vector<int>>(positional())
     );
     auto args = argparser.parse(argc, argv);
     std::cout << args.get<"namespace">() << "\n";
-    std::cout << args.get<"switch">() << "\n";
-    std::cout << std::boolalpha << args.get<"input">().size() << "\n";
+    std::cout << std::boolalpha << args.get<"switch">() << "\n";
+    std::cout << args.get<"input">().size() << "\n";
     for (auto v : args.get<"input">()) {
         std::cout << "  " << v << "\n";
     }
-    std::cout << "threshold: " << args.get<"threshold">().has_value() << "\n";
 }
