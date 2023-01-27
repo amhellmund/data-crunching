@@ -404,7 +404,7 @@ public:
     ArgImpl (Specs&& ...specs) : common_data{getArgCommonData(Name.toString(), specs...)} {
         auto optional = getOptional(specs...);
         if constexpr (not std::is_same_v<decltype(optional), std::nullopt_t>) {
-            value = optional;
+            value = convertFromOther<Type>(optional);
         }
         else {
             common_data.is_required = true;

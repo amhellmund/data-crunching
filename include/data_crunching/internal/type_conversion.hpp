@@ -48,6 +48,22 @@ auto convertFromString (const std::string& str) -> std::optional<T> {
     }
 }
 
+template <typename T, typename Other>
+requires (
+    std::is_convertible_v<Other, T> ||
+    requires {
+        T{std::declval<Other>()};
+    }
+)
+auto convertFromOther (const Other& other) {
+    if constexpr (std::is_fundamental_v<T>) {
+        return static_cast<T>(other);
+    }
+    else {
+        return T{other};
+    }
+}
+
 } // namespace internal
 
 } // namespace dacr
