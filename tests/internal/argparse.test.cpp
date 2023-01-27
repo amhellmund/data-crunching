@@ -154,6 +154,16 @@ auto isArgumentConsumption (ArgConsumption::Status status, int consume_count = -
     );
 }
 
+template <typename T>
+struct NamedTupleMock {
+    template <FixedString Name>
+    T& get () {
+        return value;
+    }
+
+    T value{};
+};
+
 // ############################################################################
 // Test: Argument
 // ############################################################################
@@ -211,6 +221,24 @@ TEST(ArgParseInternal, ArgConsumePositionalTwice) {
     EXPECT_THAT(arg.getValue(), ::testing::Optional(10));
 }
 
+TEST(ArgParseInternal, ArgStoreValueWithOptional) {
+    NamedTupleMock<int> nt;
+    ArgImpl<"arg", int> arg{optional(10)};
+    auto store_result = arg.storeValue(nt);
+
+    EXPECT_TRUE(store_result.success);
+    EXPECT_EQ(nt.value, 10);
+}
+
+TEST(ArgParseInternal, ArgStoreValueRequired) {
+    NamedTupleMock<int> nt;
+    ArgImpl<"arg", int> arg{};
+    auto store_result = arg.storeValue(nt);
+
+    EXPECT_FALSE(store_result.success);
+    EXPECT_THAT(store_result.error_message, ::testing::StartsWith("argument is required but not found"));
+}
+
 // ############################################################################
 // Test: Otional Argument
 // ############################################################################
@@ -248,6 +276,15 @@ TEST(ArgParseInternal, OptionalArgConsumePositionalTwice) {
     EXPECT_THAT(arg.getValue(), ::testing::Optional(20));
 }
 
+TEST(ArgParseInternal, OptionalArgStoreValue) {
+    NamedTupleMock<std::optional<int>> nt;
+    ArgImpl<"arg", std::optional<int>> arg{};
+    auto store_result = arg.storeValue(nt);
+
+    EXPECT_TRUE(store_result.success);
+    EXPECT_FALSE(nt.value.has_value());
+}
+
 // ############################################################################
 // Test: Switch Argument
 // ############################################################################
@@ -277,6 +314,15 @@ TEST(ArgParseInternal, SwitchArgConsumeMnemonic) {
     ArgImpl<"arg", bool> arg{mnemonic("a")};
     EXPECT_THAT(arg.consume({"-a"}, 0), isArgumentConsumption(ArgConsumption::Status::MATCH, 1));
     EXPECT_TRUE(arg.getValue());
+}
+
+TEST(ArgParseInternal, SwitchArgStoreValue) {
+    NamedTupleMock<bool> nt;
+    ArgImpl<"arg", bool> arg{};
+    auto store_result = arg.storeValue(nt);
+
+    EXPECT_TRUE(store_result.success);
+    EXPECT_FALSE(nt.value);
 }
 
 // ############################################################################
@@ -332,4 +378,74 @@ TEST(ArgParseInternal, CollectArgCommonData) {
 
     auto common_data_two_elements = collectArgCommonData(ArgImpl<"abc", int>{}, ArgImpl<"cde", bool>{});
     EXPECT_EQ(common_data_two_elements.size(), 2);
+}
+
+TEST(ArgParseInternal, ValidateArgsSuccess) {
+    auto result = validateArgs(
+        ArgImpl<"arg", int>{mnemonic("a"), help("Some help text")},
+        ArgImpl<"other", std::string>{mnemonic("o"), optional("abc")},
+        ArgImpl<"switch", bool>{mnemonic("s"), store(false)},
+        ArgImpl<"list", std::vector<int>>{mnemonic("l")}
+    );
+    EXPECT_TRUE(result.success);
+}
+
+TEST(ArgParseInternal, ValidateArgsUniqueNamesFailure) {
+    auto result = validateArgs(
+        ArgImpl<"arg", int>{mnemonic("a"), help("Some help text")},
+        ArgImpl<"arg", std::string>{mnemonic("o"), optional("abc")},
+        ArgImpl<"switch", bool>{mnemonic("s"), store(false)},
+        ArgImpl<"list", std::vector<int>>{mnemonic("l")}
+    );
+    EXPECT_FALSE(result.success);
+    EXPECT_THAT(result.error_message, ::testing::StartsWith("argument name is not unique"));
+}
+
+TEST(ArgParseInternal, ValidateArgsUniqueMnemonicsFailure) {
+    auto result = validateArgs(
+        ArgImpl<"arg", int>{mnemonic("a"), help("Some help text")},
+        ArgImpl<"other", std::string>{mnemonic("a"), optional("abc")},
+        ArgImpl<"switch", bool>{mnemonic("s"), store(false)},
+        ArgImpl<"list", std::vector<int>>{mnemonic("l")}
+    );
+    EXPECT_FALSE(result.success);
+    EXPECT_THAT(result.error_message, ::testing::StartsWith("argument mnemonic is not unique"));
+}
+
+TEST(ArgParseInternal, ValidateArgsMultipleNAryFailure) {
+    auto result = validateArgs(
+        ArgImpl<"arg", int>{mnemonic("a"), help("Some help text")},
+        ArgImpl<"other", std::string>{mnemonic("o"), optional("abc")},
+        ArgImpl<"switch", std::vector<std::string>>{mnemonic("s"), positional()},
+        ArgImpl<"list", std::vector<int>>{mnemonic("l"), positional()}
+    );
+    EXPECT_FALSE(result.success);
+    EXPECT_THAT(result.error_message, ::testing::StartsWith("argument is never reached"));
+}
+
+TEST(ArgParseInternal, NAryArgStoreValue) {
+    NamedTupleMock<std::vector<std::string>> nt;
+    ArgImpl<"arg", std::vector<std::string>> arg{};
+    auto store_result = arg.storeValue(nt);
+
+    EXPECT_TRUE(store_result.success);
+    EXPECT_THAT(nt.value, ::testing::ElementsAre());
+}
+
+TEST(ArgParseInternal, NAryArgStoreValueRequired) {
+    NamedTupleMock<std::vector<std::string>> nt;
+    ArgImpl<"arg", std::vector<std::string>> arg{required()};
+    auto store_result = arg.storeValue(nt);
+
+    EXPECT_FALSE(store_result.success);
+    EXPECT_THAT(store_result.error_message, ::testing::StartsWith("argument is required but not found"));
+}
+
+TEST(ArgParseInternal, NAryArgStoreValuePositionalRequired) {
+    NamedTupleMock<std::vector<std::string>> nt;
+    ArgImpl<"arg", std::vector<std::string>> arg{positional()};
+    auto store_result = arg.storeValue(nt);
+
+    EXPECT_FALSE(store_result.success);
+    EXPECT_THAT(store_result.error_message, ::testing::StartsWith("argument is required but not found"));
 }

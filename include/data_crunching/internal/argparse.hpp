@@ -389,6 +389,11 @@ internal::ArgConsumption consumeArgument (std::optional<T>& value, const std::ve
     }
 }
 
+struct StoreResult {
+    bool success{false};
+    std::string error_message{};
+};
+
 // ############################################################################
 // Class: Argument
 // ############################################################################
@@ -421,8 +426,12 @@ public:
     }
     
     template <typename NamedTuple>
-    void storeResult (NamedTuple& nt) {
+    StoreResult storeValue (NamedTuple& nt) {
+        if (common_data.is_required and not value.has_value()) {
+            return {.success = false, .error_message = "argument is required but not found: " + common_data.arg_name};
+        }
         nt.template get<Name>() = *value;
+        return {.success = true};
     }
 
     auto getValue () const {
@@ -456,8 +465,9 @@ public:
     }
 
     template <typename NamedTuple>
-    void storeResult (NamedTuple& nt) {
+    StoreResult storeValue (NamedTuple& nt) {
         nt.template get<Name>() = value;
+        return {.success = true};
     }
 
     auto getValue () const {
@@ -496,8 +506,9 @@ public:
     }
 
     template <typename NamedTuple>
-    void storeResult (NamedTuple& nt) {
+    StoreResult storeValue (NamedTuple& nt) {
         nt.template get<Name>() = value;
+        return {.success = true};
     }
 
     bool getValue () const {
@@ -520,7 +531,7 @@ template <FixedString Name, TypeForNAryArg Type>
 class ArgImpl<Name, std::vector<Type>> {
 public:
     template <SpecForNAryArg ...Specs>
-    ArgImpl (Specs&& ...specs) : common_data{getArgCommonData(Name.toString(), specs...)} {
+    ArgImpl (Specs&& ...specs) : common_data{getArgCommonData(Name.toString(), specs...)} {    
         common_data.is_n_ary = true;
         common_data.is_required = common_data.is_required || common_data.is_positional;
     }
@@ -546,8 +557,12 @@ public:
     }
 
     template <typename NamedTuple>
-    void storeResult (NamedTuple& nt) {
+    StoreResult storeValue (NamedTuple& nt) {
+        if (common_data.is_required and values.size() == 0) {
+            return {.success = false, .error_message = "argument is required but not found: " + common_data.arg_name};
+        }
         nt.template get<Name>() = values;
+        return {.success = true};
     }
 
     const std::vector<Type> getValue () const {
@@ -585,15 +600,86 @@ std::deque<ArgCommonData> collectArgCommonData (const FirstArg& first_arg, const
 // ############################################################################
 struct ValidationResult {
     bool success {false};
-    std::string error_message;
+    std::string error_message{};
 };
+
+ValidationResult validateArgumentNames (const std::deque<ArgCommonData>& common_data) {
+    for (auto outer = 0LU; outer < common_data.size() - 1; ++outer) {
+        for (auto inner = outer + 1; inner < common_data.size(); ++inner) {
+            if (common_data[outer].arg_name == common_data[inner].arg_name) {
+                return {.success = false, .error_message = "argument name is not unique: " + common_data[outer].arg_name};
+            }
+        }
+    }
+    return {.success = true};
+}
+
+ValidationResult validateMnemonics (const std::deque<ArgCommonData>& common_data) {
+    for (auto outer = 0LU; outer < common_data.size() - 1; ++outer) {
+        for (auto inner = outer + 1; inner < common_data.size(); ++inner) {
+            if (common_data[outer].mnemonic.has_value() and common_data[inner].mnemonic.has_value()) {
+                if (*common_data[outer].mnemonic == *common_data[inner].mnemonic) {
+                    return {.success = false, .error_message = "argument mnemonic is not unique: " + *common_data[outer].mnemonic};
+                }
+            }
+        }
+    }
+    return {.success = true};
+}
+
+ValidationResult validateNAryArguments (const std::deque<ArgCommonData>& common_data) {
+    bool positional_n_ary_found {false};
+    std::string first_positional_n_ary_arg_name{};
+    for (auto loop_index = 0LU; loop_index < common_data.size(); ++loop_index) {
+        if (common_data[loop_index].is_positional and common_data[loop_index].is_n_ary) {
+            if (not positional_n_ary_found) {
+                first_positional_n_ary_arg_name = common_data[loop_index].arg_name;
+            }
+            else {
+                return {.success = false, .error_message = "argument is never reached due to multiple n-ary positional arguments: " + common_data[loop_index].arg_name + "(shadowed by: " + first_positional_n_ary_arg_name + ")"}; 
+            }
+            positional_n_ary_found = true;
+        }
+    }
+    return {.success = true};
+}
 
 template <typename ...Args>
 ValidationResult validateArgs (const Args& ...args) {
     auto common_data = collectArgCommonData(args...);
-    // error: all names must be unique
-    // error: all mnemonics must be unique
-    // warning: multiple positional n-ary arguments
+    auto unique_arg_names_result = validateArgumentNames(common_data);
+    if (not unique_arg_names_result.success) {
+        return unique_arg_names_result;
+    }
+
+    auto unique_mnemonic_result = validateMnemonics(common_data);
+    if (not unique_mnemonic_result.success) {
+        return unique_mnemonic_result;
+    }
+
+    auto n_ary_result = validateNAryArguments(common_data);
+    if (not n_ary_result.success) {
+        return n_ary_result;
+    }
+
+    return {.success = true};
+}
+
+// ############################################################################
+// Utility: Store Value
+// ############################################################################
+template <typename NamedTuple>
+StoreResult storeValue (NamedTuple& nt) {
+    return {.success = true};
+}
+
+template <typename NamedTuple, typename FirstArg, typename ...RestArgs>
+StoreResult storeValue (NamedTuple& nt, const FirstArg& first_arg, const RestArgs& ...rest_args) {
+    auto result = first_arg.storeValue(nt);
+    if (not result.success) {
+        return result;
+    }
+    return storeValue(nt, rest_args...);
 }
 
 } // namespace internal

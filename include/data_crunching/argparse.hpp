@@ -25,6 +25,11 @@
 
 namespace dacr {
 
+class ArgumentException : public std::runtime_error {
+public:
+    using std::runtime_error::runtime_error;
+};
+
 // ############################################################################
 // Trait: Spec functions
 // ############################################################################
@@ -58,72 +63,84 @@ inline auto Arg (Specs&& ...specs) {
     return internal::ArgImpl<Name, T>(std::forward<Specs>(specs)...);
 }
 
-// template <typename ...Args>
-// class ArgumentParser {
-// public:
-//     template <typename ...CtorArgs>
-//     ArgumentParser (CtorArgs&& ...args) : arg_desc_{std::make_tuple(std::forward<CtorArgs>(args)...)} {}
+internal::ArgConsumption consumeArgument (std::vector<std::string>&, int) {
+    return {.status = internal::ArgConsumption::Status::NO_MATCH};
+}
 
-    // auto parse (int argc, char *argv[]) {
-    //     if (containsHelpOption(argc, argv)) {
-    //         printHelpText();
-    //     }
-    //     std::vector<std::string> args {argv + 1, argv + argc};
+template <typename FirstArg, typename ...RestArgs>
+internal::ArgConsumption consumeArgument(std::vector<std::string>& args, int pos, FirstArg& first_arg, RestArgs& ...rest_args) {
+    auto result = first_arg.consume(args, pos);
+    if (result.status == internal::ArgConsumption::Status::MATCH) {
+        return result;
+    }
+    return consumeArgument(args, pos, rest_args...);
+}
 
-    //     auto args_in_vector = getArgsInVector(std::index_sequence_for<Args...>{});
-    //     for (int i = 0; i < args.size(); /* no auto increment */) {
-    //         std::optional<int> consumed;
-    //         for (int a = 0LU; a < args_in_vector.size(); ++a) {
-    //             consumed = args_in_vector[a]->consume(args, i);
-    //             if (consumed.has_value()) {
-    //                 break;
-    //             }
-    //         }
-    //         if (consumed.has_value()) {
-    //             i += *consumed;
-    //         }
-    //         else {
-    //             // error
-    //         }
-    //     }
-    //     using Result = typename internal::ConstructArgumentData<Args...>::template To<NamedTuple>;
-    //     Result result{};
-    //     storeResult(result, std::index_sequence_for<Args...>{});
-    //     return result;
-    // }
+inline void exitWithError (const std::string& error_message) {
+    std::cerr << "Error: " << error_message << "\n";
+    std::exit(EXIT_FAILURE);
+}
 
-// private:
-    // template <typename NamedTuple, std::size_t ...Indices>
-    // void storeResult (NamedTuple& nt, std::integer_sequence<std::size_t, Indices...>) {
-    //     ((std::get<Indices>(arg_desc_).storeResult(nt)), ...);
-    // }
+template <typename ...Args>
+requires (sizeof...(Args) > 0)
+class ArgumentParser {
+public:
+    template <typename ...CtorArgs>
+    ArgumentParser (CtorArgs&& ...args) : arg_desc_{std::make_tuple(std::forward<CtorArgs>(args)...)} {}
 
-    // template <std::size_t ...Indices>
-    // std::vector<ArgBase*> getArgsInVector (std::integer_sequence<std::size_t, Indices...>) {
-    //     std::vector<ArgBase*> result;
-    //     ((result.push_back(&std::get<Indices>(arg_desc_))), ...);
-    //     return result;
-    // }
+    auto parse (int argc, char *argv[]) {
+        if (containsHelpOption(argc, argv)) {
+            printHelpText();
+        }
+        std::vector<std::string> args {argv + 1, argv + argc};
 
-    // using ArgumentDescriptions = std::tuple<Args...>;
-    // ArgumentDescriptions arg_desc_;
+        auto validation_result = std::apply(internal::validateArgs, arg_desc_);
+        if (not validation_result.success) {
+            exitWithError(validation_result.error_message);
+        }
 
-    // bool containsHelpOption (int argc, char *argv[]) const {
-    //     for (int i = 0; i < argc; ++i) {
-    //         if (std::strcmp(argv[i], "--help") == 0 or std::strcmp(argv[i], "-h") == 0) {
-    //             return true;
-    //         }
-    //     }
-    //     return false;
-    // }
+        for (auto i = 0LU; i < args.size(); /* no auto increment */) {
+            auto arg_consumption = std::apply(consumeArgument, arg_desc_);
+            switch (arg_consumption.status) {
+                case internal::ArgConsumption::Status::MATCH:
+                    i += arg_consumption.consume_count;
+                    break;
+                case internal::ArgConsumption::Status::NO_MATCH:
+                    exitWithError("unmatched argument: " + args[i]);
+                    break;
+                case internal::ArgConsumption::Status::ERROR:
+                    exitWithError(arg_consumption.error_message);
+                    break;
+            }
 
-    // void printHelpText () const {
-    //     std::cout << "HELP\n";
-    // }
-// };
+        }
 
-// template <typename ...CtorArgs>
-// ArgumentParser(CtorArgs&& ...args) -> ArgumentParser<CtorArgs...>;
+        using ReseultType = typename internal::ConstructArgumentData<Args...>::template To<NamedTuple>;
+        ReseultType result{};
+        auto store_result = std::apply(internal::storeValue, arg_desc_);
+        return result;
+    }
+
+private:
+    using ArgumentDescriptions = std::tuple<Args...>;
+    ArgumentDescriptions arg_desc_;
+
+    bool containsHelpOption (int argc, char *argv[]) const {
+        for (int i = 0; i < argc; ++i) {
+            if (std::strcmp(argv[i], "--help") == 0 or std::strcmp(argv[i], "-h") == 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    void printHelpText () const {
+        std::cout << "HELP\n";
+    }
+};
+
+template <typename ...CtorArgs>
+ArgumentParser(CtorArgs&& ...args) -> ArgumentParser<CtorArgs...>;
 
 } // namespace dacr
 
