@@ -75,7 +75,7 @@ public:
     template <typename ...CtorArgs>
     ArgumentParser (const std::string& program_description, CtorArgs&& ...args) : program_description_{program_description}, arg_desc_{std::make_tuple(std::forward<CtorArgs>(args)...)} {}
 
-    auto parse (int argc, const char *argv[]) {
+    auto parse (int argc, char *argv[]) {
         if (containsHelpOption(argc, argv)) {
             printHelpText(argv[0]);
         }
@@ -128,7 +128,7 @@ public:
 private:
     using ArgumentDescriptions = std::tuple<Args...>;
 
-    bool containsHelpOption (int argc, const char *argv[]) const {
+    bool containsHelpOption (int argc, char *argv[]) const {
         for (int i = 0; i < argc; ++i) {
             if (std::strcmp(argv[i], "--help") == 0 or std::strcmp(argv[i], "-h") == 0) {
                 return true;

@@ -56,7 +56,7 @@ TEST(ArgParse, End2End) {
         "-lf", "2.34",
         "--list_char", "a"
     };
-    auto args = argparse.parse(sizeof(argv) / sizeof(argv[0]), argv);
+    auto args = argparse.parse(sizeof(argv) / sizeof(argv[0]), const_cast<char**>(argv));
 
     EXPECT_EQ(args.get<"char">(), 'A');
     EXPECT_EQ(args.get<"int">(), 123);
