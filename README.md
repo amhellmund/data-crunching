@@ -183,7 +183,7 @@ This allows to define argument parsing without any repitition (like defining an 
 Like the `DataFrame` class, the `ArgumentParser` tries to check as many failures at compile-time.
 
 > **NOTE:** 
-    It is important to mention that the provided `ArgumentParser` is a very simple one with advanced features like subcommands.
+    It is important to mention that the provided `ArgumentParser` is a simple one without advanced features like subcommands.
     It should however be sufficient for major use cases in data crunching applications.
 
 ### Example
