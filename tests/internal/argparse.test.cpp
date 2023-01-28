@@ -63,6 +63,11 @@ TEST(ArgParseInternal, IsSpecContainedInSpecs) {
     EXPECT_FALSE((is_spec_contained_in_specs<Store, Positional, Help, Required>));
 }
 
+TEST(ArgParseInternal, IsOptionalContainedInSpecs) {
+    EXPECT_TRUE((is_optional_contained_in_specs<Positional, Optional<int>>));
+    EXPECT_FALSE((is_optional_contained_in_specs<Positional, Required>));
+}
+
 TEST(ArgParseInternal, SpecForArgImpl) {
     EXPECT_TRUE((is_valid_spec_for_arg<Help>));
     EXPECT_TRUE((is_valid_spec_for_arg<Mnemonic>));

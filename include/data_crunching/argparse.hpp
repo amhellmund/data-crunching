@@ -64,7 +64,7 @@ inline auto Arg (Specs&& ...specs) {
 }
 
 inline void exitWithError (const std::string& error_message) {
-    std::cerr << "Error: " << error_message << "\n";
+    std::cerr << "[ERROR] " << error_message << "\n";
     std::exit(EXIT_FAILURE);
 }
 
@@ -73,11 +73,11 @@ requires (sizeof...(Args) > 0)
 class ArgumentParser {
 public:
     template <typename ...CtorArgs>
-    ArgumentParser (CtorArgs&& ...args) : arg_desc_{std::make_tuple(std::forward<CtorArgs>(args)...)} {}
+    ArgumentParser (const std::string& program_description, CtorArgs&& ...args) : program_description_{program_description}, arg_desc_{std::make_tuple(std::forward<CtorArgs>(args)...)} {}
 
-    auto parse (int argc, char *argv[]) {
+    auto parse (int argc, const char *argv[]) {
         if (containsHelpOption(argc, argv)) {
-            printHelpText();
+            printHelpText(argv[0]);
         }
         std::vector<std::string> arguments {argv + 1, argv + argc};
 
@@ -127,9 +127,8 @@ public:
 
 private:
     using ArgumentDescriptions = std::tuple<Args...>;
-    ArgumentDescriptions arg_desc_;
 
-    bool containsHelpOption (int argc, char *argv[]) const {
+    bool containsHelpOption (int argc, const char *argv[]) const {
         for (int i = 0; i < argc; ++i) {
             if (std::strcmp(argv[i], "--help") == 0 or std::strcmp(argv[i], "-h") == 0) {
                 return true;
@@ -138,14 +137,73 @@ private:
         return false;
     }
 
-    void printHelpText () const {
-        std::cout << "HELP\n";
+    void printHelpText (const std::string& program_name) const {
+        std::cout << program_description_ << "\n";
+        auto common_args = std::apply(
+            [](const auto& ...args) {
+                return internal::collectArgCommonData(args...);
+            },
+            arg_desc_
+        );
+
+        std::cout << "\n";
+        std::cout << program_name;
+        for (const auto& data : common_args) {
+            if (data.is_positional) {
+                
+            }
+            else {
+                
+            }
+        }
+        
+
+        std::cout << "\n";
+        std::cout << "Positional\n";
+        std::cout << "----------\n";
+        for (const auto& data : common_args) {
+            if (data.is_positional) {
+                std::cout << std::string(2, ' ') << data.arg_name << ": " << (data.help.has_value() ? *data.help : "");
+                if (data.is_required) {
+                    std::cout << " [required]";
+                }
+                if (data.is_n_ary) {
+                    std::cout << " [n-ary]";
+                }
+                std::cout << "\n";
+            }
+        }
+
+        std::cout << "\n";
+        std::cout << "Arguments\n";
+        std::cout << "---------\n";
+        for (const auto& data : common_args) {
+            if (not data.is_positional) {
+                std::cout << std::string(2, ' ') << "--" << data.arg_name; 
+                if (data.mnemonic.has_value()) {
+                    std::cout << " (-" << *data.mnemonic << ")";
+                }
+                std::cout << ": " << (data.help.has_value() ? *data.help : "");
+                if (data.is_required) {
+                    std::cout << " [required]";;
+                }
+                if (data.is_n_ary) {
+                    std::cout << " [n-ary]";
+                }
+                std::cout << "\n";
+            }
+        }
+
+
         std::exit(EXIT_SUCCESS);
     }
+
+    std::string program_description_;
+    ArgumentDescriptions arg_desc_;
 };
 
 template <typename ...CtorArgs>
-ArgumentParser(CtorArgs&& ...args) -> ArgumentParser<CtorArgs...>;
+ArgumentParser(const std::string&, CtorArgs&& ...args) -> ArgumentParser<CtorArgs...>;
 
 } // namespace dacr
 

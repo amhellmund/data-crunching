@@ -140,6 +140,25 @@ template <typename SearchType, typename ...Specs>
 constexpr bool is_spec_contained_in_specs = IsSpecContainedInSpecsImpl<SearchType, Specs...>::value;
 
 // ############################################################################
+// Trait: Is Optional Contained In Specs
+// ############################################################################
+template <typename ...Specs>
+struct IsOptionalContainedInSpecsImpl : std::false_type {};
+
+template <typename FirstType, typename ...RestSpecs>
+struct IsOptionalContainedInSpecsImpl<FirstType, RestSpecs...> {
+    static constexpr bool value = IsOptionalContainedInSpecsImpl<RestSpecs...>::value;
+};
+
+template <typename T, typename ...RestSpecs>
+struct IsOptionalContainedInSpecsImpl<Optional<T>, RestSpecs...> : std::true_type {
+};
+
+template <typename ...Specs>
+constexpr bool is_optional_contained_in_specs = IsOptionalContainedInSpecsImpl<Specs...>::value;
+
+
+// ############################################################################
 // Trait & Concept: Is Optional
 // ############################################################################
 template <typename T>
@@ -177,12 +196,6 @@ constexpr bool is_valid_spec_for_arg = IsValidSpecForArgImpl<T>::value;
 
 template <typename T>
 concept SpecForArg = is_valid_spec_for_arg<T>;
-
-
-// ############################################################################
-// Trait & Concept: Is Valid Type For Arg
-// ############################################################################
-
 
 // ############################################################################
 // Trait & Concept: Is Valid Spec for Optional Arg
@@ -252,7 +265,7 @@ concept SpecForNAryArg = is_valid_spec_for_n_ary_arg<T>;
 // ############################################################################
 template <typename T>
 concept TypeForArg = (
-    internal::IsArithmetic<T> ||
+    IsArithmetic<T> ||
     requires {
         T{std::declval<std::string>()};
     }
@@ -363,7 +376,7 @@ template <FixedString Name, typename Type>
 class ArgImpl;
 
 template <typename T>
-internal::ArgConsumption consumePositionalArgument (std::optional<T>& value, const std::string& arg) {
+ArgConsumption consumePositionalArgument (std::optional<T>& value, const std::string& arg) {
     auto converted_arg = convertFromString<T>(arg);
     if (converted_arg.has_value()) {
         value = *converted_arg;
@@ -375,7 +388,7 @@ internal::ArgConsumption consumePositionalArgument (std::optional<T>& value, con
 }
 
 template <typename T>
-internal::ArgConsumption consumeDashedArgument (std::optional<T>& value, const std::vector<std::string>& args, int pos) {
+ArgConsumption consumeDashedArgument (std::optional<T>& value, const std::vector<std::string>& args, int pos) {
     if (pos + 1 >= args.size()) {
         return {.status = ArgConsumption::Status::ERROR, .error_message = "missing argument"};
     }
@@ -397,10 +410,16 @@ struct StoreResult {
 // ############################################################################
 // Class: Argument
 // ############################################################################
-template <FixedString Name, internal::TypeForArg Type>
+template <FixedString Name, TypeForArg Type>
 class ArgImpl<Name, Type> {
 public:
-    template <internal::SpecForArg ...Specs>
+    template <SpecForArg ...Specs>
+    requires (
+        not (
+            is_spec_contained_in_specs<Positional, Specs...> and
+            is_optional_contained_in_specs<Specs...>
+        )
+    )
     ArgImpl (Specs&& ...specs) : common_data{getArgCommonData(Name.toString(), specs...)} {
         auto optional = getOptional(specs...);
         if constexpr (not std::is_same_v<decltype(optional), std::nullopt_t>) {
@@ -411,7 +430,7 @@ public:
         }
     }
 
-    internal::ArgConsumption consume (const std::vector<std::string>& args, int pos) {
+    ArgConsumption consume (const std::vector<std::string>& args, int pos) {
         if (common_data.is_positional and isPositionalArgument(args[pos])) {
             if (not common_data.is_matched) {
                 common_data.is_matched = true;
@@ -444,7 +463,7 @@ public:
     }
 
 private:
-    internal::ArgCommonData common_data{};
+    ArgCommonData common_data{};
     std::optional<Type> value{};
 };
 
@@ -457,7 +476,7 @@ public:
     template <SpecForOptionalArg ...Specs>
     ArgImpl (Specs&& ...specs) : common_data{getArgCommonData(Name.toString(), specs...)} {}
 
-    internal::ArgConsumption consume (const std::vector<std::string>& args, int pos) {
+    ArgConsumption consume (const std::vector<std::string>& args, int pos) {
         if (isArgumentMatched(args[pos], common_data)) {
             common_data.is_matched = true;
             return consumeDashedArgument(value, args, pos);
@@ -495,7 +514,7 @@ public:
         value = not getStore(specs...);
     }
 
-    internal::ArgConsumption consume (const std::vector<std::string>& args, int pos) {
+    ArgConsumption consume (const std::vector<std::string>& args, int pos) {
         if (isArgumentMatched(args[pos], common_data)) {
             if (not common_data.is_matched) {
                 value = not value;
@@ -537,7 +556,7 @@ public:
         common_data.is_required = common_data.is_required || common_data.is_positional;
     }
 
-    internal::ArgConsumption consume (const std::vector<std::string>& args, int pos) {
+    ArgConsumption consume (const std::vector<std::string>& args, int pos) {
         if (common_data.is_positional and isPositionalArgument(args[pos])) {
             std::optional<Type> value;
             auto result = consumePositionalArgument(value, args[pos]);
@@ -687,14 +706,22 @@ StoreResult storeValue (NamedTuple& nt, const FirstArg& first_arg, const RestArg
 // Utility: Consume Argument
 // ############################################################################
 template <typename LastArg>
-internal::ArgConsumption consumeArgument (const std::vector<std::string>& arguments, int pos, LastArg& last_arg) {
-    return last_arg.consume(arguments, pos);
+ArgConsumption consumeArgument (const std::vector<std::string>& arguments, int pos, LastArg& last_arg) {
+    auto result = last_arg.consume(arguments, pos);
+    if (result.status == ArgConsumption::Status::ERROR) {
+        result.error_message += " (context: arg-name = " + last_arg.getCommonData().arg_name + ", input argument = " + arguments[pos] + ")";
+    }
+    return result;
 }
 
 template <typename FirstArg, typename ...RestArgs>
-internal::ArgConsumption consumeArgument(const std::vector<std::string>& arguments, int pos, FirstArg& first_arg, RestArgs& ...rest_args) {
+ArgConsumption consumeArgument(const std::vector<std::string>& arguments, int pos, FirstArg& first_arg, RestArgs& ...rest_args) {
     auto result = first_arg.consume(arguments, pos);
-    if (result.status == internal::ArgConsumption::Status::MATCH) {
+    if (result.status == ArgConsumption::Status::MATCH) {
+        return result;
+    }
+    else if (result.status == ArgConsumption::Status::ERROR) {
+        result.error_message += " (context: arg-name = " + first_arg.getCommonData().arg_name + ", input argument = " + arguments[pos] + ")";
         return result;
     }
     return consumeArgument(arguments, pos, rest_args...);

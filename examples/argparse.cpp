@@ -29,9 +29,10 @@ std::ostream& operator<< (std::ostream& os, const Namespace& ns) {
 
 int main (int argc, char*argv[]) {
     auto argparser = ArgumentParser(
+        "Program to showcase C++ argparse",
         Arg<"namespace", Namespace>(mnemonic("n"), help("The namespace"), optional("cde")),
         Arg<"switch", bool>(mnemonic("s"), help("Help text"), store(true)),
-        Arg<"input", std::vector<int>>(positional())
+        Arg<"input", std::vector<int>>(positional(), help("The input numbers"))
     );
     auto args = argparser.parse(argc, argv);
     std::cout << args.get<"namespace">() << "\n";

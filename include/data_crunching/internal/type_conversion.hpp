@@ -32,9 +32,40 @@ struct TypeConversion {
 };
 
 template <>
+struct TypeConversion<char> {
+    static char fromString (const std::string& str) {
+        if (str.size() != 1) {
+            throw std::invalid_argument("string cannot be converted to char");
+        }
+        return str[0];
+    }
+};
+
+template <>
 struct TypeConversion<int> {
     static int fromString (const std::string& str) {
         return std::stoi(str);
+    }
+};
+
+template <>
+struct TypeConversion<long int> {
+    static long int fromString (const std::string& str) {
+        return std::stol(str);
+    }
+};
+
+template <>
+struct TypeConversion<float> {
+    static float fromString (const std::string& str) {
+        return std::stof(str);
+    }
+};
+
+template <>
+struct TypeConversion<double> {
+    static double fromString (const std::string& str) {
+        return std::stod(str);
     }
 };
 
