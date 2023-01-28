@@ -17,6 +17,7 @@
 
 #include <string>
 #include <deque>
+#include <sstream>
 
 #include "data_crunching/internal/fixed_string.hpp"
 #include "data_crunching/namedtuple.hpp"
@@ -293,6 +294,7 @@ struct ArgCommonData {
     bool is_required {false};
     bool is_positional {false};
     bool is_n_ary {false};
+    bool has_argument{false};
     
     std::optional<std::string> help;
 
@@ -428,6 +430,7 @@ public:
         else {
             common_data.is_required = true;
         }
+        common_data.has_argument = true;
     }
 
     ArgConsumption consume (const std::vector<std::string>& args, int pos) {
@@ -474,7 +477,9 @@ template <FixedString Name, TypeForOptionalArg Type>
 class ArgImpl<Name, std::optional<Type>> {
 public:
     template <SpecForOptionalArg ...Specs>
-    ArgImpl (Specs&& ...specs) : common_data{getArgCommonData(Name.toString(), specs...)} {}
+    ArgImpl (Specs&& ...specs) : common_data{getArgCommonData(Name.toString(), specs...)} {
+        common_data.has_argument = true;
+    }
 
     ArgConsumption consume (const std::vector<std::string>& args, int pos) {
         if (isArgumentMatched(args[pos], common_data)) {
@@ -512,6 +517,7 @@ public:
     template <SpecForSwitchArg ...Specs>
     ArgImpl (Specs&& ...specs) : common_data{getArgCommonData(Name.toString(), specs...)} {
         value = not getStore(specs...);
+        common_data.has_argument = false;
     }
 
     ArgConsumption consume (const std::vector<std::string>& args, int pos) {
@@ -554,6 +560,7 @@ public:
     ArgImpl (Specs&& ...specs) : common_data{getArgCommonData(Name.toString(), specs...)} {    
         common_data.is_n_ary = true;
         common_data.is_required = common_data.is_required || common_data.is_positional;
+        common_data.has_argument = not common_data.is_positional;
     }
 
     ArgConsumption consume (const std::vector<std::string>& args, int pos) {
@@ -725,6 +732,105 @@ ArgConsumption consumeArgument(const std::vector<std::string>& arguments, int po
         return result;
     }
     return consumeArgument(arguments, pos, rest_args...);
+}
+
+// ############################################################################
+// Utility: Help Printing
+// ############################################################################
+
+void printAttributes (std::ostream& os, const ArgCommonData& common_data) {
+    if (common_data.is_required) {
+        os << " [required]";
+    }
+    if (common_data.is_n_ary) {
+        os << " [n-ary]";
+    }
+}
+
+void printPositionalArgument(std::ostream& os, const ArgCommonData& common_data) {
+    os << common_data.arg_name;
+    if (common_data.is_n_ary) {
+        os << "...";
+    }
+}
+
+void printDashedArgument(std::ostream& os, const ArgCommonData& common_data) {
+    std::string dashed_argument = "(--" + common_data.arg_name;
+    if (common_data.has_argument) {
+        dashed_argument += " ARG";
+    }
+    if (common_data.mnemonic.has_value()) {
+        dashed_argument += "|-" + *common_data.mnemonic;
+        if (common_data.has_argument) {
+            dashed_argument += " ARG";
+        }
+    }
+    dashed_argument += ")";
+    if (common_data.is_n_ary) {
+        dashed_argument += "...";
+    }
+    if (not common_data.is_required) {
+        os << "[" << dashed_argument << "]";
+    }
+    else {
+        os << dashed_argument;
+    }
+}
+
+
+template <typename ArgumentTuple>
+std::string composeHelpText (const std::string program_name, const std::string program_description, const ArgumentTuple& arg_description) {
+    std::stringstream sstr;
+    sstr << program_description << "\n";
+    auto common_args = std::apply(
+        [](const auto& ...args) {
+            return internal::collectArgCommonData(args...);
+        },
+        arg_description
+    );
+
+    sstr << "\n";
+    sstr << program_name;
+    for (const auto& data : common_args) {
+        sstr << " ";
+        if (data.is_positional) {
+            printPositionalArgument(sstr, data);  
+        }
+        else {
+            printDashedArgument(sstr, data);
+        }
+    }
+    sstr << "\n";
+    
+    sstr << "\n";
+    sstr << "Positional\n";
+    sstr << "----------\n";
+    for (const auto& data : common_args) {
+        if (data.is_positional) {
+            sstr << std::string(2, ' ') << data.arg_name << ": " << (data.help.has_value() ? *data.help : "");
+            printAttributes(sstr, data);
+            sstr << "\n";
+        }
+    }
+
+    sstr << "\n";
+    sstr << "Arguments\n";
+    sstr << "---------\n";
+    for (const auto& data : common_args) {
+        if (not data.is_positional) {
+            sstr << std::string(2, ' ') << "--" << data.arg_name;
+            if (data.mnemonic.has_value()) {
+                sstr << "(-" << *data.mnemonic << ")";
+            }
+            if (data.has_argument) {
+                sstr << " ARG";
+            }
+            sstr << ": " << (data.help.has_value() ? *data.help : "");
+            printAttributes(sstr, data);
+            sstr << "\n";
+        }
+    }
+    return sstr.str();
 }
 
 } // namespace internal

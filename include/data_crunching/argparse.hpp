@@ -77,7 +77,9 @@ public:
 
     auto parse (int argc, char *argv[]) {
         if (containsHelpOption(argc, argv)) {
-            printHelpText(argv[0]);
+            auto help_text = internal::composeHelpText(argv[0], program_description_, arg_desc_);
+            std::cout << help_text;
+            std::exit(EXIT_SUCCESS);
         }
         std::vector<std::string> arguments {argv + 1, argv + argc};
 
@@ -135,67 +137,6 @@ private:
             }
         }
         return false;
-    }
-
-    void printHelpText (const std::string& program_name) const {
-        std::cout << program_description_ << "\n";
-        auto common_args = std::apply(
-            [](const auto& ...args) {
-                return internal::collectArgCommonData(args...);
-            },
-            arg_desc_
-        );
-
-        std::cout << "\n";
-        std::cout << program_name;
-        for (const auto& data : common_args) {
-            if (data.is_positional) {
-                
-            }
-            else {
-                
-            }
-        }
-        
-
-        std::cout << "\n";
-        std::cout << "Positional\n";
-        std::cout << "----------\n";
-        for (const auto& data : common_args) {
-            if (data.is_positional) {
-                std::cout << std::string(2, ' ') << data.arg_name << ": " << (data.help.has_value() ? *data.help : "");
-                if (data.is_required) {
-                    std::cout << " [required]";
-                }
-                if (data.is_n_ary) {
-                    std::cout << " [n-ary]";
-                }
-                std::cout << "\n";
-            }
-        }
-
-        std::cout << "\n";
-        std::cout << "Arguments\n";
-        std::cout << "---------\n";
-        for (const auto& data : common_args) {
-            if (not data.is_positional) {
-                std::cout << std::string(2, ' ') << "--" << data.arg_name; 
-                if (data.mnemonic.has_value()) {
-                    std::cout << " (-" << *data.mnemonic << ")";
-                }
-                std::cout << ": " << (data.help.has_value() ? *data.help : "");
-                if (data.is_required) {
-                    std::cout << " [required]";;
-                }
-                if (data.is_n_ary) {
-                    std::cout << " [n-ary]";
-                }
-                std::cout << "\n";
-            }
-        }
-
-
-        std::exit(EXIT_SUCCESS);
     }
 
     std::string program_description_;
