@@ -630,7 +630,21 @@ struct ValidationResult {
     std::string error_message{};
 };
 
+bool isValidName (const std::string name) {
+    for (const auto ch : name) {
+        if (not ((ch >= 'a' and ch <= 'z') or (ch >= 'A' and ch <= 'Z') or (ch >= '0' and ch <= '9') or (ch == '_'))) {
+            return false;
+        }
+    }
+    return true;
+}
+
 ValidationResult validateArgumentNames (const std::deque<ArgCommonData>& common_data) {
+    for (const auto& data : common_data) {
+        if (not isValidName(data.arg_name)) {
+            return {.success = false, .error_message = "argument name has invalid characters: " + data.arg_name};
+        }
+    }
     for (auto outer = 0LU; outer < common_data.size() - 1; ++outer) {
         for (auto inner = outer + 1; inner < common_data.size(); ++inner) {
             if (common_data[outer].arg_name == common_data[inner].arg_name) {
@@ -642,6 +656,11 @@ ValidationResult validateArgumentNames (const std::deque<ArgCommonData>& common_
 }
 
 ValidationResult validateMnemonics (const std::deque<ArgCommonData>& common_data) {
+    for (const auto& data : common_data) {
+        if (data.mnemonic.has_value() and not isValidName(*data.mnemonic)) {
+            return {.success = false, .error_message = "argument mnemonic has invalid characters: " + *data.mnemonic};
+        }
+    }
     for (auto outer = 0LU; outer < common_data.size() - 1; ++outer) {
         for (auto inner = outer + 1; inner < common_data.size(); ++inner) {
             if (common_data[outer].mnemonic.has_value() and common_data[inner].mnemonic.has_value()) {

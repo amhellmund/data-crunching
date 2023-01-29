@@ -26,7 +26,7 @@ auto parser = dacr::ArgumentParser(
 );
 ```
 
-Argument names must not contain any whitespace characters.
+Argument names must only contain letters or underscores or dashes.
 After the parser is defined, the commandline arguments passed to the program are parsed with:
 
 ```cpp
@@ -52,7 +52,7 @@ The `ArgumentParser` supports the following argument attributes:
 | Attribute | Description | Usage |
 |:---------:|:------------|:------|
 | `help` | The description for the argument. | `help("<help_text>")` |
-| `mnemonic` | Short variable name with a single dash (`-<mnemonic>`). The short variable name must not contain whitespace characters. | `mnemonic("<short-variable>")` |
+| `mnemonic` | Short variable name with a single dash (`-<mnemonic>`). The short variable name must only contain letters or underscores or dashes. | `mnemonic("<short-variable>")` |
 | `optional` | A default value for the argument. | `optional(<default_value>)` |
 | `positional` | An argument with a leading dash. | `positional()` |
 | `store` | The value to set for switch arguments if provided on the commandline. The default value is the negation then. | `store(true|false)` |
@@ -178,6 +178,17 @@ The `ArgumentParser` always prints a commandline help in case `--help` or `-h` i
 The help output looks like this:
 
 ```console
+Program to showcase C++ argparse
 
+./bazel-bin/examples/example_argparse [(--namespace ARG|-n ARG)] [(--switch|-s)] input...
+
+Positional
+----------
+  input: The input numbers [required] [n-ary]
+
+Arguments
+---------
+  --namespace(-n) ARG: The namespace
+  --switch(-s): Help text
 ```
 

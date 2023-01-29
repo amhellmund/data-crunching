@@ -395,6 +395,14 @@ TEST(ArgParseInternal, ValidateArgsSuccess) {
     EXPECT_TRUE(result.success);
 }
 
+TEST(ArgParseInternal, ValidateArgsInvalidCharacters) {
+    auto result = validateArgs(
+        ArgImpl<"arg name", int>{mnemonic("a"), help("Some help text")}
+    );
+    EXPECT_FALSE(result.success);
+    EXPECT_THAT(result.error_message, ::testing::StartsWith("argument name has invalid characters"));
+}
+
 TEST(ArgParseInternal, ValidateArgsUniqueNamesFailure) {
     auto result = validateArgs(
         ArgImpl<"arg", int>{mnemonic("a"), help("Some help text")},
@@ -415,6 +423,14 @@ TEST(ArgParseInternal, ValidateArgsUniqueMnemonicsFailure) {
     );
     EXPECT_FALSE(result.success);
     EXPECT_THAT(result.error_message, ::testing::StartsWith("argument mnemonic is not unique"));
+}
+
+TEST(ArgParseInternal, ValidateArgsMnemonicInvalidCharacters) {
+    auto result = validateArgs(
+        ArgImpl<"arg", int>{mnemonic("a b"), help("Some help text")}
+    );
+    EXPECT_FALSE(result.success);
+    EXPECT_THAT(result.error_message, ::testing::StartsWith("argument mnemonic has invalid characters"));
 }
 
 TEST(ArgParseInternal, ValidateArgsMultipleNAryFailure) {
