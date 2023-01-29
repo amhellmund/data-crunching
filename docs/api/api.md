@@ -11,8 +11,9 @@ The project offers the following main APIs:
 
 | API | Description | Link |
 |:---:|:------------|:-----|
-| `DataFrame` | In-Memory Column-Store for Data Analysis | [Documentation](dataframe.md) |
-| `NamedTuple` | Tuple Dataclass with String-Based Member Access | [Documentation](namedtuple.md) |
+| `ArgumentParser` | Utility class to parse commandline arguments. | [Documentation](argumentparser.md) |
+| `DataFrame` | In-Memory Column-Store for Data Analysis. | [Documentation](dataframe.md) |
+| `NamedTuple` | Tuple Dataclass with String-Based Member Access. | [Documentation](namedtuple.md) |
 
 # Configuration
 

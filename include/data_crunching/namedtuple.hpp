@@ -148,6 +148,8 @@ requires (
 )
 class NamedTuple {
 public:
+    NamedTuple() = default;
+
     template <typename ...Types>
     requires (
         sizeof...(Types) == sizeof...(Fields) &&

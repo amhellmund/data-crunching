@@ -50,6 +50,10 @@ struct FixedString {
         return result;
     }
 
+    constexpr auto toString () const {
+        return std::string{data};
+    }
+
     char data[N];
 };
 

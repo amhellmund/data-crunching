@@ -28,8 +28,9 @@ Below is a short description of the core APIs with minimal examples get a sneak 
 
 The _data crunching_ currently provides these core APIs:
 
-- `DataFrame`: a column-store in-memory database for data analysis
-- `NamedTuple`: a data class combining structural definition with reflection
+- `DataFrame`: a column-store in-memory database for data analysis.
+- `NamedTuple`: a data class combining structural definition with reflection.
+- `ArgumentParser`: a parser for command-line arguments into `NamedTuple`.
 
 ## DataFrame
 
@@ -172,6 +173,49 @@ int main (int argc, char*argv[]) {
 
     // structured bindings
     auto [a, d] = namedtuple3;
+}
+```
+
+## Argument Parser
+
+The `ArgumentParser` is an utility class to read commandline arguments into a `NamedTuple`.
+This allows to define argument parsing without any repitition (like defining an underlying struct to store the values and the command-line arguments, etc).
+Like the `DataFrame` class, the `ArgumentParser` tries to check as many failures at compile-time.
+
+> **NOTE:** 
+    It is important to mention that the provided `ArgumentParser` is a simple one without advanced features like subcommands.
+    It should however be sufficient for major use cases in data crunching applications.
+
+### Example
+
+```cpp
+#include <data_crunching/argparse.hpp>
+
+using namespace dacr;
+
+struct Namespace {
+    std::string name;
+};
+
+std::ostream& operator<< (std::ostream& os, const Namespace& ns) {
+    os << "Namespace: " << ns.name;
+    return os;
+}
+
+int main (int argc, char*argv[]) {
+    auto argparser = ArgumentParser(
+        "Program to showcase C++ argparse",
+        Arg<"namespace", Namespace>(mnemonic("n"), help("The namespace"), optional("cde")),
+        Arg<"switch", bool>(mnemonic("s"), help("Help text"), store(true)),
+        Arg<"input", std::vector<int>>(positional(), help("The input numbers"))
+    );
+    auto args = argparser.parse(argc, argv);
+    std::cout << args.get<"namespace">() << "\n";
+    std::cout << std::boolalpha << args.get<"switch">() << "\n";
+    std::cout << args.get<"input">().size() << "\n";
+    for (auto v : args.get<"input">()) {
+        std::cout << "  " << v << "\n";
+    }
 }
 ```
 
