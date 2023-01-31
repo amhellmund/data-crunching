@@ -1,4 +1,15 @@
 cc_test(
+    name = "test_argparse",
+    srcs = [
+        "argparse.test.cpp",
+    ],
+    deps = [
+        "//:data_crunching",
+        "@googletest//:gtest_main",
+    ],
+)
+
+cc_test(
     name = "test_dataframe",
     srcs = [
         "dataframe.test.cpp",
@@ -21,9 +32,9 @@ cc_test(
 )
 
 cc_test(
-    name = "test_argparse",
+    name = "test_string",
     srcs = [
-        "argparse.test.cpp",
+        "string.test.cpp",
     ],
     deps = [
         "//:data_crunching",
@@ -43,6 +54,7 @@ cc_test(
         "internal/fixed_string.test.cpp",
         "internal/name_list.test.cpp",
         "internal/namedtuple.test.cpp",
+        "internal/string.test.cpp",
         "internal/type_list.test.cpp",
         "internal/utils.test.cpp",
     ],

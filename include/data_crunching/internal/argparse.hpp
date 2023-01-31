@@ -265,12 +265,7 @@ concept SpecForNAryArg = is_valid_spec_for_n_ary_arg<T>;
 // Trait & Concept: Is Valid Type For Arg
 // ############################################################################
 template <typename T>
-concept TypeForArg = (
-    IsArithmetic<T> ||
-    requires {
-        T{std::declval<std::string>()};
-    }
-);
+concept TypeForArg = IsConvertibleFromString<T>;
 
 template <typename T>
 concept TypeForOptionalArg = (

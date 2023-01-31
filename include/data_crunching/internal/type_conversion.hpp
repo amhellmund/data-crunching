@@ -15,6 +15,8 @@
 #ifndef DATA_CRUNCHING_INTERNAL_TYPE_CONVERSION_HPP
 #define DATA_CRUNCHING_INTERNAL_TYPE_CONVERSION_HPP
 
+#include <string>
+
 #include "data_crunching/internal/fixed_string.hpp"
 
 namespace dacr {
