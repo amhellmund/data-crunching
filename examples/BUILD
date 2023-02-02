@@ -1,4 +1,12 @@
 cc_binary(
+    name = "example_argparse",
+    srcs = ["argparse.cpp"],
+    deps = [
+        "//:data_crunching",
+    ]
+)
+
+cc_binary(
     name = "example_dataframe",
     srcs = ["dataframe.cpp"],
     deps = [
@@ -15,8 +23,8 @@ cc_binary(
 )
 
 cc_binary(
-    name = "example_argparse",
-    srcs = ["argparse.cpp"],
+    name = "example_string",
+    srcs = ["string.cpp"],
     deps = [
         "//:data_crunching",
     ]

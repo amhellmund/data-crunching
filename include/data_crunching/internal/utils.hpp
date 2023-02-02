@@ -151,6 +151,16 @@ inline std::size_t getMinSizeFromRanges (Ranges&& ...ranges) {
     );
 }
 
+// ############################################################################
+// Concept: Is Convertible From String
+// ############################################################################
+template <typename T>
+concept IsConvertibleFromString = 
+    IsArithmetic<T> ||
+    requires {
+        T{std::declval<std::string>()};
+    };
+
 } // namespace dacr::internal
 
 #endif // DATA_CRUNCHING_INTERNAL_UTILS_HPP
