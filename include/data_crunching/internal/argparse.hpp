@@ -33,7 +33,7 @@ template <FixedString Name, typename Type>
 class ArgImpl;
 
 // ############################################################################
-// Trait: Spec classes
+// Class: Spec classes
 // ############################################################################
 struct Mnemonic {
     std::string short_arg{};
@@ -59,7 +59,7 @@ struct Store {
 };
 
 // ############################################################################
-// Trait: Get Mnemonic
+// Utility: Get Mnemonic
 // ############################################################################
 std::optional<std::string> getMnemonic () {
     return std::nullopt;
@@ -76,7 +76,7 @@ std::optional<std::string> getMnemonic(Mnemonic mnemonic, RestSpecs ...rest_spec
 }
 
 // ############################################################################
-// Trait: Get Help
+// Utility: Get Help
 // ############################################################################
 std::optional<std::string> getHelp () {
     return std::nullopt;
@@ -93,7 +93,7 @@ std::optional<std::string> getHelp(Help help, RestSpecs ...rest_specs) {
 }
 
 // ############################################################################
-// Trait: Get Optional
+// Utility: Get Optional
 // ############################################################################
 auto getOptional () {
     return std::nullopt;
@@ -110,7 +110,7 @@ auto getOptional(Optional<T> optional, RestSpecs ...rest_specs) {
 }
 
 // ############################################################################
-// Trait: Get Store
+// Utility: Get Store
 // ############################################################################
 bool getStore () {
     return true;
@@ -262,7 +262,7 @@ template <typename T>
 concept SpecForNAryArg = is_valid_spec_for_n_ary_arg<T>;
 
 // ############################################################################
-// Trait & Concept: Is Valid Type For Arg
+// Concept: Is Valid Type For Arg
 // ############################################################################
 template <typename T>
 concept TypeForArg = IsConvertibleFromString<T>;
@@ -316,7 +316,7 @@ auto getArgCommonData (const std::string& arg_name, Specs&& ...specs) {
 }
 
 // ############################################################################
-// Utilities
+// Utilities: Arguments
 // ############################################################################
 inline bool isPositionalArgument (const std::string& arg) {
     return (not arg.starts_with("-"));
