@@ -12,6 +12,7 @@ cc_library(
         "include/data_crunching/internal/dataframe_summarize.hpp",
         "include/data_crunching/internal/fixed_string.hpp",
         "include/data_crunching/internal/name_list.hpp",
+        "include/data_crunching/internal/string.hpp",
         "include/data_crunching/internal/type_conversion.hpp",
         "include/data_crunching/internal/type_list.hpp",
         "include/data_crunching/internal/utils.hpp",
