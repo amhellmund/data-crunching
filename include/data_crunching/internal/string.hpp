@@ -32,63 +32,63 @@ public:
 };
 
 template <std::size_t IgnoreCount>
-struct Ignore {};
+struct Skip {};
 
 namespace internal {
 
 // ############################################################################
-// Trait: Is Ignore
+// Trait: Is Skip
 // ############################################################################
 template <typename T>
-struct IsIgnoreImpl : std::false_type {};
+struct IsSkipImpl : std::false_type {};
 
 template <std::size_t Count>
-struct IsIgnoreImpl<Ignore<Count>> : std::true_type {
+struct IsSkipImpl<Skip<Count>> : std::true_type {
 };
 
 template <typename T>
-constexpr bool is_ignore = IsIgnoreImpl<T>::value;
+constexpr bool is_skip = IsSkipImpl<T>::value;
 
 // ############################################################################
-// Trait: Construct Type List for Split Without Ignore
+// Trait: Construct Type List for Split Without Skip
 // ############################################################################
 template <typename ...Args>
-struct ConstructTypeListForSplitWithoutIgnoreImpl {
+struct ConstructTypeListForSplitWithoutSkipImpl {
     using type = TypeList<>;
 };
 
 template <typename FirstArg, typename ...Args>
-struct ConstructTypeListForSplitWithoutIgnoreImpl<FirstArg, Args...> {
+struct ConstructTypeListForSplitWithoutSkipImpl<FirstArg, Args...> {
     using type = std::conditional_t<
-        is_ignore<FirstArg>,
-        typename ConstructTypeListForSplitWithoutIgnoreImpl<Args...>::type,
-        TypeListPrepend<FirstArg, typename ConstructTypeListForSplitWithoutIgnoreImpl<Args...>::type>
+        is_skip<FirstArg>,
+        typename ConstructTypeListForSplitWithoutSkipImpl<Args...>::type,
+        TypeListPrepend<FirstArg, typename ConstructTypeListForSplitWithoutSkipImpl<Args...>::type>
     >;
 };
 
 template <typename ...Args>
-using ConstructTypeListForSplitWithoutIgnore = typename ConstructTypeListForSplitWithoutIgnoreImpl<Args...>::type;
+using ConstructTypeListForSplitWithoutSkip = typename ConstructTypeListForSplitWithoutSkipImpl<Args...>::type;
 
 // ############################################################################
-// Trait: Get Argument Indices For Split Without Ignore
+// Trait: Get Argument Indices For Split Without Skip
 // ############################################################################
 template <std::size_t LoopVar, typename ...Args>
-struct GetArgumentIndicesForSplitWithoutIgnoreImpl {
+struct GetArgumentIndicesForSplitWithoutSkipImpl {
     using type = std::integer_sequence<std::size_t>;
 };
 
 template <std::size_t LoopVar, typename FirstArg, typename ...Rest>
-struct GetArgumentIndicesForSplitWithoutIgnoreImpl<LoopVar, FirstArg, Rest...> {
-    using type = IntegerSequencePrepend<LoopVar, typename GetArgumentIndicesForSplitWithoutIgnoreImpl<LoopVar + 1, Rest...>::type>;  
+struct GetArgumentIndicesForSplitWithoutSkipImpl<LoopVar, FirstArg, Rest...> {
+    using type = IntegerSequencePrepend<LoopVar, typename GetArgumentIndicesForSplitWithoutSkipImpl<LoopVar + 1, Rest...>::type>;  
 };
 
-template <std::size_t LoopVar, std::size_t IgnoreCount, typename ...Rest>
-struct GetArgumentIndicesForSplitWithoutIgnoreImpl<LoopVar, Ignore<IgnoreCount>, Rest...> {
-    using type = typename GetArgumentIndicesForSplitWithoutIgnoreImpl<LoopVar + IgnoreCount, Rest...>::type;
+template <std::size_t LoopVar, std::size_t SkipCount, typename ...Rest>
+struct GetArgumentIndicesForSplitWithoutSkipImpl<LoopVar, Skip<SkipCount>, Rest...> {
+    using type = typename GetArgumentIndicesForSplitWithoutSkipImpl<LoopVar + SkipCount, Rest...>::type;
 };
 
 template <typename ...Args>
-using GetArgumentIndicesForSplitWithoutIgnore = typename GetArgumentIndicesForSplitWithoutIgnoreImpl<0, Args...>::type;
+using GetArgumentIndicesForSplitWithoutSkip = typename GetArgumentIndicesForSplitWithoutSkipImpl<0, Args...>::type;
 
 
 // ############################################################################

@@ -78,8 +78,8 @@ auto split (const std::string& str, const std::string& delim) {
     else {
         return internal::convertToTuple(
             split_str,
-            internal::ConstructTypeListForSplitWithoutIgnore<Args...>{},
-            internal::GetArgumentIndicesForSplitWithoutIgnore<Args...>{}
+            internal::ConstructTypeListForSplitWithoutSkip<Args...>{},
+            internal::GetArgumentIndicesForSplitWithoutSkip<Args...>{}
         );
     }
 }

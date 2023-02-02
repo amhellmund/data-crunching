@@ -62,6 +62,6 @@ TEST(String, SplitIntoArgs) {
 }
 
 TEST(String, SplitIntoArgsWithIgnore) {
-    auto tuple = dacr::split<int, dacr::Ignore<2>, double, dacr::Ignore<1>, std::string>("10,xxx,xxx,20.5,xxx,abc", ",");
+    auto tuple = dacr::split<int, dacr::Skip<2>, double, dacr::Skip<1>, std::string>("10,xxx,xxx,20.5,xxx,abc", ",");
     EXPECT_THAT(tuple, ::testing::FieldsAre(10, 20.5, std::string{"abc"}));
 }

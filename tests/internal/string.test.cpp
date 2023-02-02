@@ -37,16 +37,16 @@ TEST(StringInternal, SplitStringIntoVector) {
     EXPECT_THAT(splitStringIntoVector("/-/30", "/-/"), ::testing::ElementsAre("", "30"));
 }
 
-TEST(StringInternal, ConstructTypeListForSplitWithoutIgnore) {
+TEST(StringInternal, ConstructTypeListForSplitWithoutSkip) {
     EXPECT_TRUE((std::is_same_v<
-        ConstructTypeListForSplitWithoutIgnore<int, Ignore<1>, double, Ignore<2>>,
+        ConstructTypeListForSplitWithoutSkip<int, Skip<1>, double, Skip<2>>,
         TypeList<int, double>
     >));
 }
 
-TEST(StringInternal, GetArgumentIndicesForSplitWithoutIgnore) {
+TEST(StringInternal, GetArgumentIndicesForSplitWithoutSkip) {
     EXPECT_TRUE((std::is_same_v<
-        GetArgumentIndicesForSplitWithoutIgnore<int, Ignore<1>, double, Ignore<3>, float>,
+        GetArgumentIndicesForSplitWithoutSkip<int, Skip<1>, double, Skip<3>, float>,
         std::integer_sequence<std::size_t, 0, 2, 6>
     >));
 }

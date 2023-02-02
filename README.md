@@ -10,6 +10,7 @@ The goal of this project is to provide a type-aware and type-safe data crunching
 The project is currently in a proof-of-concept phase to elaborate on the usefullness of type-aware data crunching APIs and the chosen syntax.
 Therefore, some of the features are partly implemented or with limited checks on the input arguments (see Limitations for details).
 
+
 # Compatibility
 
 The _data crunching_ library is known to compile in the following development environment:
@@ -19,10 +20,12 @@ The _data crunching_ library is known to compile in the following development en
 - clang++ 15.0.4
 - libc++ 15.0.4
 
+
 # Documentation
 
 The full documentation for the _data crunching_ API is available [here](https://amhellmund.github.io/data_crunching/).
 Below is a short description of the core APIs with minimal examples get a sneak preview of what is provided.
+
 
 # Core APIs
 
@@ -30,7 +33,7 @@ The _data crunching_ currently provides these core APIs:
 
 - `DataFrame`: a column-store in-memory database for data analysis.
 - `NamedTuple`: a data class combining structural definition with reflection.
-- `ArgumentParser`: a parser for command-line arguments into `NamedTuple`.
+
 
 ## DataFrame
 
@@ -175,6 +178,16 @@ int main (int argc, char*argv[]) {
     auto [a, d] = namedtuple3;
 }
 ```
+- `ArgumentParser`: a parser for command-line arguments into `NamedTuple`.
+
+
+# Supplemental APIs
+
+In addition to the core APIs, a few supplemental APIs are provided that ease data crunching:
+
+- `ArgumentParser`: a parser for command-line arguments into `NamedTuple`.
+- `split`: a utility to split strings into user-defined types
+
 
 ## Argument Parser
 
@@ -216,6 +229,32 @@ int main (int argc, char*argv[]) {
     for (auto v : args.get<"input">()) {
         std::cout << "  " << v << "\n";
     }
+}
+```
+
+
+## String Split
+
+The `split` function is a utility to perform the split and type conversion in a single step.
+It comes in two flavors: conversion into a `std::vector` or `std::set` of a single type or conversion into `std::tuple` of different types.
+
+### Example
+
+```cpp
+#include <data_crunching/string.hpp>
+
+using namespace dacr;
+
+struct Namespace {
+    std::string name;
+};
+
+int main (int argc, char*argv[]) {
+    std::vector<Namespace> ns = dacr::split("abc,cde", ",");
+    std::set<int> unique_ids = dacr::split("10,20,30", ",");
+
+    auto tuple = dacr::split<int,double>("10,20.12", ",");
+    auto [id, name, size] = dacr::split<int,dacr::Skip<2>,std::string,double>("101,Toronto,James,Last,1.76", ",");
 }
 ```
 
