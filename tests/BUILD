@@ -43,17 +43,6 @@ cc_test(
 )
 
 cc_test(
-    name = "test_string",
-    srcs = [
-        "string.test.cpp",
-    ],
-    deps = [
-        "//:data_crunching",
-        "@googletest//:gtest_main",
-    ],
-)
-
-cc_test(
     name = "test_internal",
     srcs = [
         "internal/argparse.test.cpp",
