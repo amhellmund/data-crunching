@@ -61,7 +61,14 @@ TEST(String, SplitIntoArgs) {
     EXPECT_THAT(tuple, ::testing::FieldsAre(10, 20.5, std::string{"abc"}));
 }
 
-TEST(String, SplitIntoArgsWithIgnore) {
+TEST(String, SplitIntoArgsWithSkip) {
     auto tuple = dacr::split<int, dacr::Skip<2>, double, dacr::Skip<1>, std::string>("10,xxx,xxx,20.5,xxx,abc", ",");
     EXPECT_THAT(tuple, ::testing::FieldsAre(10, 20.5, std::string{"abc"}));
+}
+
+TEST(String, SplitIntoArgsWithSkipFailure) {
+    EXPECT_THROW(
+        (dacr::split<int, dacr::Skip<10>, double, dacr::Skip<1>, std::string>("10,xxx,xxx,20.5,xxx,abc", ",")),
+        dacr::StringException
+    );
 }

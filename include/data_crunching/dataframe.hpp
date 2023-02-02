@@ -398,6 +398,20 @@ private:
 #define dacr_param auto data
 #define dacr_value(field_name) data.template get<field_name>()
 
+// ############################################################################
+// Concept: Is DataFrame
+// ############################################################################
+template <typename ...>
+struct IsDataFrameImpl : std::false_type {
+
+};
+
+template <typename ...Columns>
+struct IsDataFrameImpl<DataFrame<Columns...>> : std::true_type {};
+
+template <typename Type>
+concept IsDataFrame = IsDataFrameImpl<Type>::value;
+
 } // namespace dacr
 
 #endif // DATA_CRUNCHING_DATAFRAME_HPP
