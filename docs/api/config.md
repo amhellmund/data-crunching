@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Configuration
+title: Configuration API
 parent: API Documentation
 nav_order: 2
 ---
