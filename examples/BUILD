@@ -6,11 +6,22 @@ cc_binary(
     ]
 )
 
+exports_files(
+    [
+        "data/city.csv",
+        "data/person.csv",
+    ]
+)
+
 cc_binary(
     name = "example_dataframe",
     srcs = ["dataframe.cpp"],
     deps = [
         "//:data_crunching",
+    ],
+    data = [
+        "//examples:data/city.csv",
+        "//examples:data/person.csv",
     ]
 )
 

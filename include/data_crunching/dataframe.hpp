@@ -30,15 +30,27 @@
 namespace dacr {
 
 template <internal::IsColumn ...Columns>
-requires internal::are_names_unique<internal::GetColumnNames<Columns...>>
-// ToDO: column names must not be empty
+requires (
+    internal::are_names_unique<internal::GetColumnNames<Columns...>> and
+    internal::are_names_valid_identifiers<internal::GetColumnNames<Columns...>>
+)
 class DataFrame {
 public:
     template<internal::IsColumn ...OtherColumns>
-    requires internal::are_names_unique<internal::GetColumnNames<OtherColumns...>>
+    requires (
+        internal::are_names_unique<internal::GetColumnNames<OtherColumns...>> and
+        internal::are_names_valid_identifiers<internal::GetColumnNames<OtherColumns...>>
+    )
     friend class DataFrame;
 
     DataFrame() = default;
+
+    // ############################################################################
+    // API: Column Details
+    // ############################################################################
+    using ColumnTypes = internal::GetColumnTypes<Columns...>;
+    using ColumnSpecs = TypeList<Columns...>;
+    static constexpr std::size_t NUM_COLUMNS = sizeof...(Columns); 
 
     // ############################################################################
     // API: Get Size
@@ -397,6 +409,20 @@ private:
 
 #define dacr_param auto data
 #define dacr_value(field_name) data.template get<field_name>()
+
+// ############################################################################
+// Concept: Is DataFrame
+// ############################################################################
+template <typename ...>
+struct IsDataFrameImpl : std::false_type {
+
+};
+
+template <typename ...Columns>
+struct IsDataFrameImpl<DataFrame<Columns...>> : std::true_type {};
+
+template <typename Type>
+concept IsDataFrame = IsDataFrameImpl<Type>::value;
 
 } // namespace dacr
 

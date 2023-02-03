@@ -82,6 +82,43 @@ struct AreNamesUniqueImpl<NameList<FirstName, RestNames...>> {
 template <typename NameList>
 inline constexpr bool are_names_unique = (NameList::getSize() <= 1 || AreNamesUniqueImpl<NameList>::value);
 
+
+// ############################################################################
+// Trait: Are Names Valid Identifiers
+// ############################################################################
+
+template <std::size_t N, std::size_t ...Indices>
+constexpr bool isNameValidIdentifier (FixedString<N> name, std::integer_sequence<std::size_t, Indices...>) {
+    return (N > 0) and (
+        (
+            (name.data[Indices] >= 'a' and name.data[Indices] <= 'z') or 
+            (name.data[Indices] >= 'A' and name.data[Indices] <= 'Z') or 
+            (name.data[Indices] >= '0' and name.data[Indices] <= '9') or
+            (name.data[Indices] == '_') or
+            (name.data[Indices] == '-')
+        ) and ...
+    );
+}
+
+template <std::size_t N>
+constexpr bool isNameValidIdentifier (FixedString<N> name) {
+    return isNameValidIdentifier(name, std::make_index_sequence<N-1>{});
+}
+
+template <typename>
+struct AreNamesValidIdentifiersImpl : std::true_type {};
+
+template <FixedString FirstName, FixedString ...RestNames>
+struct AreNamesValidIdentifiersImpl<NameList<FirstName, RestNames...>> {
+    static constexpr bool value = (
+        isNameValidIdentifier(FirstName) && AreNamesValidIdentifiersImpl<NameList<RestNames...>>::value
+    );
+};
+
+template <typename NameList>
+constexpr bool are_names_valid_identifiers = AreNamesValidIdentifiersImpl<NameList>::value;
+
+
 // ############################################################################
 // Trait: Name List Difference
 // ############################################################################

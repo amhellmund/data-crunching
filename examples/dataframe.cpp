@@ -14,6 +14,7 @@
 
 #include <string>
 #include <data_crunching/dataframe.hpp>
+#include <data_crunching/io/csv.hpp>
 
 auto getPersonData() {
     using DataFrame = dacr::DataFrame<
@@ -23,15 +24,7 @@ auto getPersonData() {
         dacr::Column<"size_in_m", double>,
         dacr::Column<"weight_in_kg", int>
     >;
-
-    DataFrame df;
-    df.insert("NameA", "Berlin", 30, 1.75, 80);
-    df.insert("NameB", "London", 62, 1.60, 100);
-    df.insert("NameC", "Seoul", 20, 1.90, 70);
-    df.insert("NameD", "Tokio", 59, 1.72, 60);
-    df.insert("NameE", "San Francisco", 40, 1.79, 95);
-    df.insert("NameF", "Toronto", 51, 1.99, 156);
-    return df;
+    return dacr::load_from_csv<DataFrame>("examples/data/person.csv");
 }
 
 auto getCityData() {
@@ -40,15 +33,7 @@ auto getCityData() {
         dacr::Column<"country", std::string>,
         dacr::Column<"continent", std::string>
     >;
-
-    DataFrame df;
-    df.insert("Berlin", "Germany", "Europe");
-    df.insert("London", "England", "Europe");
-    df.insert("Seoul", "South Korea", "Asia");
-    df.insert("Tokio", "Japan", "Asia");
-    df.insert("San Francisco", "USA", "North America");
-    df.insert("Toronto", "Canada", "North America");
-    return df;
+    return dacr::load_from_csv<DataFrame>("examples/data/city.csv");
 }
 
 int main (int argc, char *argv[]) {
