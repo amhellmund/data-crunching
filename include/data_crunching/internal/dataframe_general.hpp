@@ -27,7 +27,10 @@
 namespace dacr {
 
 template <internal::IsColumn ...Columns>
-requires internal::are_names_unique<internal::GetColumnNames<Columns...>>
+requires (
+    internal::are_names_unique<internal::GetColumnNames<Columns...>> and
+    internal::are_names_valid_identifiers<internal::GetColumnNames<Columns...>>
+)
 class DataFrame;
 
 enum class Join : int {

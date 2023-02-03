@@ -128,7 +128,13 @@ auto convertElementToTargetType (const std::vector<std::string>& split_str) {
     if (Index >= split_str.size()) {
         throw StringException(std::format("Requested index {} is out of bounds (max elements = {})", Index, split_str.size()));
     }
-    return convertFromString<Type>(split_str.at(Index));
+    auto converted_data = convertFromString<Type>(split_str.at(Index));
+    if (converted_data.has_value()) {
+        return *converted_data;
+    }
+    else {
+        throw StringException(std::format("Failed to convert element: {}", split_str.at(Index)));
+    }
 }
 
 template <typename ...ArgTypes, std::size_t ...ArgIndices>

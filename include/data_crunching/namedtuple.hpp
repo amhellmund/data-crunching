@@ -144,7 +144,8 @@ struct FieldForward {
 template <internal::IsField ...Fields>
 requires (
     sizeof...(Fields) > 0 &&
-    internal::are_names_unique<internal::GetNamesFromFields<Fields...>>
+    internal::are_names_unique<internal::GetNamesFromFields<Fields...>> &&
+    internal::are_names_valid_identifiers<internal::GetNamesFromFields<Fields...>>
 )
 class NamedTuple {
 public:

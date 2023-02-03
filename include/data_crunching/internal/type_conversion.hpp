@@ -16,8 +16,10 @@
 #define DATA_CRUNCHING_INTERNAL_TYPE_CONVERSION_HPP
 
 #include <string>
+#include <type_traits>
 
 #include "data_crunching/internal/fixed_string.hpp"
+#include "data_crunching/internal/type_list.hpp"
 
 namespace dacr {
 
@@ -25,7 +27,7 @@ namespace internal {
 
 // ############################################################################
 // Trait: Conversion From String
-// ############################################################################{
+// ############################################################################
 template <typename T>
 struct TypeConversion {
     static T fromString (const std::string& str) {
@@ -96,6 +98,24 @@ auto convertFromOther (const Other& other) {
         return T{other};
     }
 }
+
+// ############################################################################
+// Trait: Are Types Convertible From String
+// ############################################################################
+template <typename>
+struct AreTypesConvertibleFromStringImpl : std::true_type {};
+
+template <typename FirstType, typename ...RestTypes>
+struct AreTypesConvertibleFromStringImpl<TypeList<FirstType, RestTypes...>> {
+    static constexpr bool value = (
+        std::is_arithmetic_v<FirstType> ||
+        requires {
+            FirstType{std::declval<std::string>()};
+        }) && AreTypesConvertibleFromStringImpl<TypeList<RestTypes...>>::value;
+};
+
+template <typename Types>
+constexpr bool are_types_convertible_from_string = AreTypesConvertibleFromStringImpl<Types>::value;
 
 } // namespace internal
 

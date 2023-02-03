@@ -43,6 +43,21 @@ cc_test(
 )
 
 cc_test(
+    name = "test_io_csv",
+    srcs = [
+        "io/csv.test.cpp",
+    ],
+    deps = [
+        "//:data_crunching",
+        "@googletest//:gtest_main",
+    ],
+    data = [
+        "//tests/data:simple.csv",
+        "//tests/data:simple_with_header.csv",
+    ]
+)
+
+cc_test(
     name = "test_internal",
     srcs = [
         "internal/argparse.test.cpp",
