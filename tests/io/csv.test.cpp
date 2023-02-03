@@ -22,7 +22,18 @@ using namespace dacr;
 
 TEST(IoCsv, LoadFromFile) {
     using DF = DataFrame<Column<"id", int>, Column<"number", double>, Column<"string", std::string>>;
-    auto df = load_from_csv<DF>("simple.csv", ",", false);
-    df.print();
+    auto df = load_from_csv<DF>("tests/data/simple.csv", ",", false);
     EXPECT_EQ(df.getSize(), 1);
+    EXPECT_THAT(df.getColumn<"id">(), ::testing::ElementsAre(10));
+    EXPECT_THAT(df.getColumn<"number">(), ::testing::ElementsAre(::testing::DoubleEq(20.433)));
+    EXPECT_THAT(df.getColumn<"string">(), ::testing::ElementsAre(::testing::StrEq("abc")));
+}
+
+TEST(IoCsv, LoadFromFileWithHeader) {
+    using DF = DataFrame<Column<"id", int>, Column<"number", double>, Column<"string", std::string>>;
+    auto df = load_from_csv<DF>("tests/data/simple_with_header.csv", ",", true);
+    EXPECT_EQ(df.getSize(), 1);
+    EXPECT_THAT(df.getColumn<"id">(), ::testing::ElementsAre(10));
+    EXPECT_THAT(df.getColumn<"number">(), ::testing::ElementsAre(::testing::DoubleEq(20.433)));
+    EXPECT_THAT(df.getColumn<"string">(), ::testing::ElementsAre(::testing::StrEq("abc")));
 }

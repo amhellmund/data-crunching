@@ -1,3 +1,10 @@
+exports_files(
+    [
+        "data/simple.csv",
+        "data/simple_with_header.csv",
+    ]
+)
+
 cc_test(
     name = "test_argparse",
     srcs = [
@@ -52,8 +59,8 @@ cc_test(
         "@googletest//:gtest_main",
     ],
     data = [
-        "//tests/data:simple.csv",
-        "//tests/data:simple_with_header.csv",
+        "//tests:data/simple.csv",
+        "//tests:data/simple_with_header.csv",
     ]
 )
 
