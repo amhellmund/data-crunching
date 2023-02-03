@@ -163,7 +163,6 @@ int main (int argc, char*argv[]) {
     auto [a, d] = namedtuple3;
 }
 ```
-- `ArgumentParser`: a parser for command-line arguments into `NamedTuple`.
 
 
 # Supplemental APIs
