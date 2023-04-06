@@ -429,3 +429,32 @@ std::vector<Type>& getColumn ();
 The function `getColumn` returns an instance-qualified `std::vector` reference to the column data.
 
 > **NOTE:** This will later be changed into a `DataSeries` type in later versions once the `DataSeries` type is introduced.
+
+
+## Function Parameters
+
+The `DataFrame` class may be passed into functions via template functions:
+
+```cpp
+template <typename ... Columns>
+void function (const DataFrame<Columns...>& df) {
+}
+```
+
+The disadvantage of this approach is that the contract between caller and callee is implicit by how the function accesses the `DataFrame`.
+In future, a mode shall be supported that allows an easier way to express the contract via function arguments, e.g. by:
+
+```cpp
+// NOT YET SUPPORTED
+using DataFrameInput = DataFrame<
+    Column<"a", int>,
+    Column<"b", float>,
+    Column<"c", double>
+>;
+
+void callee (const DataFrame<Column<"a", int>>& df) {
+}
+
+void caller () {
+    callee(DataFrameInput{});
+}
